@@ -1,6 +1,5 @@
 ﻿Imports System.IO.Ports
 Imports System.Threading
-Imports System.Windows.Input
 
 Class MainWindow
     Private WithEvents serialPort As SerialPort
@@ -61,8 +60,9 @@ Class MainWindow
             End If
 
             Try
-                serialPort = New SerialPort(currentPort, currentBaud)
-                serialPort.NewLine = vbLf ' Arduino usually ends with "\n"
+                serialPort = New SerialPort(currentPort, currentBaud) With {
+                    .NewLine = vbLf ' Arduino usually ends with "\n"
+                    }
                 serialPort.Open()
                 isConnected = True
                 BtnConnectDisconnect.Content = "Disconnect"
