@@ -4,74 +4,200 @@
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:Arduino_Serial_Connection"
+		xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
 		mc:Ignorable="d"
-		Title="Arduino Serial Connection"
-		MinWidth="480"
-		Loaded="Window_Loaded"
-		Background="#fafafa"
-		Closing="Window_Closing"
+		Title="Arduino Serial Dashboard"
+		MinWidth="720"
+		FontSize="16"
+		Background="#eee"
 		ResizeMode="NoResize"
 		WindowStartupLocation="CenterScreen"
+		Loaded="Window_Loaded"
+		Closing="Window_Closing"
 		SizeToContent="WidthAndHeight">
-	<DockPanel>
-		<StatusBar DockPanel.Dock="Bottom"
-				   Background="#eeeeee"
-				   Padding="8">
-			<StatusBarItem>
+	<StackPanel Orientation="Vertical">
+		<Border Background="#ddd"
+				Padding="12,8">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="Auto" />
+					<ColumnDefinition Width="Auto" />
+				</Grid.ColumnDefinitions>
 				<TextBlock x:Name="TxtStatus"
 						   Text="Disconnected"
 						   FontStyle="Italic"
-						   Foreground="Gray" />
-			</StatusBarItem>
-		</StatusBar>
-		<StackPanel DockPanel.Dock="Bottom"
-					Margin="20,0,20,12">
-			<TextBlock Text="Log Output"
-					   FontSize="16"
-					   FontWeight="Bold"
-					   Margin="0,0,0,8" />
-			<Border Padding="8"
-					BorderBrush="#cccccc"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Left" />
+				<ToggleButton x:Name="BtnToggleOnOff"
+							  Grid.Column="1"
+							  Content="Turn ON"
+							  Width="120"
+							  Height="40"
+							  Background="#4CAF50"
+							  Foreground="White"
+							  FontWeight="SemiBold"
+							  Checked="BtnToggleOnOff_Checked"
+							  Unchecked="BtnToggleOnOff_Unchecked"
+							  IsEnabled="False" />
+				<Button x:Name="BtnOpenConnector"
+						Grid.Column="2"
+						Content="Connect"
+						Width="120"
+						Height="40"
+						Margin="8,0,0,0"
+						Background="#007ACC"
+						Foreground="White"
+						FontWeight="SemiBold"
+						Click="BtnOpenConnector_Click" />
+			</Grid>
+		</Border>
+		<Grid Margin="12">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="240" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="240" />
+				<RowDefinition Height="240" />
+			</Grid.RowDefinitions>
+			<Border Grid.Row="0"
+					Grid.Column="0"
+					BorderBrush="#ccc"
 					BorderThickness="1"
-					CornerRadius="4"
 					Background="White"
-					SnapsToDevicePixels="True"
-					Height="110">
-				<TextBox x:Name="TxtData"
-						 FontSize="14"
-						 IsReadOnly="True"
-						 BorderThickness="0"
-						 VerticalScrollBarVisibility="Auto"
-						 TextWrapping="Wrap"
-						 AcceptsReturn="True"
-						 Background="Transparent" />
+					Margin="4"
+					CornerRadius="12">
+				<StackPanel VerticalAlignment="Center">
+					<TextBlock Text="Humidity"
+							   FontWeight="Bold"
+							   FontSize="16"
+							   TextAlignment="Center"
+							   Padding="0,4" />
+					<Grid Width="160"
+						  Height="160">
+						<Ellipse Stroke="#ddd"
+								 StrokeThickness="28" />
+						<Path x:Name="ArcHumidity"
+							  Stroke="#007ACC"
+							  StrokeThickness="28"
+							  Fill="Transparent"
+							  StrokeStartLineCap="Round"
+							  StrokeEndLineCap="Round" />
+						<TextBlock x:Name="TxtHumidityPercent"
+								   Text="0%"
+								   FontSize="28"
+								   HorizontalAlignment="Center"
+								   VerticalAlignment="Center"
+								   FontWeight="Bold" />
+					</Grid>
+				</StackPanel>
 			</Border>
-		</StackPanel>
-		<StackPanel Orientation="Vertical"
-					Margin="20"
-					DockPanel.Dock="Top">
-			<Button x:Name="BtnOpenConnector"
-					Content="Connect to Port"
-					Margin="0,0,0,8"
-					Padding="8"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Background="#007ACC"
-					Foreground="White"
-					Click="BtnOpenConnector_Click" />
-			<ToggleButton x:Name="BtnToggleOnOff"
-						  Content="Turn ON"
-						  Margin="0,0,0,10"
-						  Padding="8"
-						  FontSize="14"
-						  FontWeight="SemiBold"
-						  Background="#4CAF50"
-						  Foreground="White"
-						  BorderThickness="0"
-						  Height="36"
-						  Checked="BtnToggleOnOff_Checked"
-						  Unchecked="BtnToggleOnOff_Unchecked"
-						  IsEnabled="False" />
-		</StackPanel>
-	</DockPanel>
+			<lvc:CartesianChart x:Name="ChartHumidity"
+								Grid.Row="0"
+								Grid.Column="1"
+								Margin="0,12">
+				<lvc:CartesianChart.Series>
+					<lvc:LineSeries x:Name="SeriesHumidity"
+									Stroke="Blue"
+									Fill="#55007ACC"
+									PointGeometrySize="5" />
+				</lvc:CartesianChart.Series>
+				<lvc:CartesianChart.AxisX>
+					<lvc:Axis LabelsRotation="0" />
+				</lvc:CartesianChart.AxisX>
+				<lvc:CartesianChart.AxisY>
+					<lvc:Axis MinValue="0"
+							  MaxValue="100"
+							  Title="Humidity (%)" />
+				</lvc:CartesianChart.AxisY>
+			</lvc:CartesianChart>
+			<Border Grid.Row="1"
+					Grid.Column="0"
+					BorderBrush="#ccc"
+					BorderThickness="1"
+					Background="White"
+					Margin="4"
+					CornerRadius="12">
+				<Grid VerticalAlignment="Center"
+					  HorizontalAlignment="Center">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto" />
+						<RowDefinition Height="160" />
+					</Grid.RowDefinitions>
+					<TextBlock Grid.Row="0"
+							   Grid.ColumnSpan="2"
+							   Text="Temperature"
+							   FontWeight="Bold"
+							   FontSize="16"
+							   TextAlignment="Center" />
+					<Border Grid.Row="1"
+							Grid.Column="0"
+							HorizontalAlignment="Right"
+							Width="20"
+							Height="140"
+							Background="#ddd"
+							Margin="0,0,20,0">
+						<Rectangle x:Name="RectangleTemp"
+								   Width="20"
+								   Height="0"
+								   Fill="#FF5722"
+								   VerticalAlignment="Bottom" />
+					</Border>
+					<TextBlock x:Name="TxtTemperature"
+							   Grid.Row="1"
+							   Grid.Column="1"
+							   Text="0 °C"
+							   FontSize="28"
+							   FontWeight="Bold"
+							   HorizontalAlignment="Left"
+							   VerticalAlignment="Center" />
+				</Grid>
+			</Border>
+			<lvc:CartesianChart x:Name="ChartTemperature"
+								Grid.Row="1"
+								Grid.Column="1"
+								Margin="0,12">
+				<lvc:CartesianChart.Series>
+					<lvc:LineSeries x:Name="SeriesTemperature"
+									Stroke="Red"
+									Fill="#55FF5722"
+									PointGeometrySize="5" />
+				</lvc:CartesianChart.Series>
+				<lvc:CartesianChart.AxisX>
+					<lvc:Axis LabelsRotation="0" />
+				</lvc:CartesianChart.AxisX>
+				<lvc:CartesianChart.AxisY>
+					<lvc:Axis MinValue="-20"
+							  MaxValue="70"
+							  Title="Temperature (°C)" />
+				</lvc:CartesianChart.AxisY>
+			</lvc:CartesianChart>
+		</Grid>
+		<TextBlock Text="Log Output"
+				   FontSize="16"
+				   FontWeight="Bold"
+				   Margin="12,0" />
+		<Border Padding="8"
+				Margin="12"
+				BorderBrush="#ccc"
+				BorderThickness="1"
+				CornerRadius="4"
+				Background="White"
+				Height="120"
+				SnapsToDevicePixels="True">
+			<TextBox x:Name="TxtData"
+					 FontSize="12"
+					 IsReadOnly="True"
+					 BorderThickness="0"
+					 VerticalScrollBarVisibility="Auto"
+					 TextWrapping="Wrap"
+					 AcceptsReturn="True"
+					 Background="Transparent" />
+		</Border>
+	</StackPanel>
 </Window>
