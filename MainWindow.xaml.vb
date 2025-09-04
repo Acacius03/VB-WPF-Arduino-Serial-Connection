@@ -1,5 +1,6 @@
 ﻿Imports System.IO.Ports
 Imports System.Threading
+Imports System.Windows.Input
 
 Class MainWindow
     Private WithEvents serialPort As SerialPort
@@ -102,5 +103,15 @@ Class MainWindow
         Catch ex As Exception
             ' ignore timeouts / disconnects
         End Try
+    End Sub
+
+    ' 🔹 Detect spacebar key press and send to Arduino
+    Private Sub Window_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If e.Key = Key.Space Then
+            If isConnected AndAlso serialPort IsNot Nothing AndAlso serialPort.IsOpen Then
+                serialPort.Write(" ") ' send space char (ASCII 32)
+                LogMessage("PC", "Sent SPACE (toggle request)")
+            End If
+        End If
     End Sub
 End Class
