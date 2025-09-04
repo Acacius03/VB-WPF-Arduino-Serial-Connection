@@ -1,5 +1,4 @@
 ﻿Imports System.IO.Ports
-Imports System.Threading
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
@@ -21,43 +20,13 @@ Class MainWindow
         End If
     End Sub
 
-    Private Sub BtnScanPorts_Click(sender As Object, e As RoutedEventArgs)
-        PopulatePorts()
-    End Sub
-
-    Private Sub BtnConnectDisconnect_Click(sender As Object, e As RoutedEventArgs)
-        If Not isConnected Then
-            ' 🔹 If no port or baud rate is chosen, stop
-            If CboPorts.SelectedItem Is Nothing OrElse CboBaudRates.SelectedItem Is Nothing Then
-                LogMessage("ERROR", "⚠️ No port or baud rate selected.")
-                Return
-            End If
-
-            Try
-                SerialPort = New SerialPort(CboPorts.SelectedItem.ToString(), CInt(CboBaudRates.SelectedItem)) With {
-                    .NewLine = vbLf ' Arduino usually ends with "\n"
-                }
-                SerialPort.Open()
-                isConnected = True
-                BtnConnectDisconnect.Content = "Disconnect"
-                LogMessage("INFO", $"Connected at {CboPorts.SelectedItem}, baud: {CboBaudRates.SelectedItem}")
-            Catch ex As Exception
-                LogMessage("ERROR", "❌ Failed to connect: " & ex.Message)
-            End Try
-        Else
-            Try
-                If SerialPort IsNot Nothing Then
-                    If SerialPort.IsOpen Then SerialPort.Close()
-                    SerialPort.Dispose()
-                    SerialPort = Nothing
-                End If
-                isConnected = False
-                BtnConnectDisconnect.Content = "Connect"
-                LogMessage("INFO", "Disconnected")
-            Catch ex As Exception
-                LogMessage("ERROR", "❌ Failed to disconnect: " & ex.Message)
-            End Try
-        End If
+    Private Sub SerialWrite(text As String)
+        If Not isConnected OrElse SerialPort Is Nothing OrElse Not SerialPort.IsOpen Then Return
+        Try
+            SerialPort.Write(text)
+        Catch ex As Exception
+            LogMessage("❌ ERROR", ex.Message)
+        End Try
     End Sub
 
     ' 🔹 Capture Arduino output
@@ -74,45 +43,69 @@ Class MainWindow
         End Try
     End Sub
 
-    Private Sub Window_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.Space Then
-            If isConnected AndAlso SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then
-                Try
-                    SerialPort.Write(" ")
-                    LogMessage("PC", "Sent SPACE (toggle request)")
-                Catch ex As Exception
-                    LogMessage("ERROR", "Write error: " & ex.Message)
-                End Try
-            End If
-        End If
-    End Sub
-
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
         Dim baudRates As Integer() = {9600, 19200, 38400, 57600, 115200}
         CboBaudRates.ItemsSource = baudRates
         PopulatePorts()
     End Sub
 
-    Private Sub BtnOff_Click(sender As Object, e As RoutedEventArgs)
-        If isConnected AndAlso SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then
+    Private Sub BtnScanPorts_Click(sender As Object, e As RoutedEventArgs)
+        PopulatePorts()
+    End Sub
+
+    Private Sub BtnConnectDisconnect_Click(sender As Object, e As RoutedEventArgs)
+        If Not isConnected Then
+            ' 🔹 If no port or baud rate is chosen, stop
+            If CboPorts.SelectedItem Is Nothing Then
+                LogMessage("⚠️ ERROR", "No port selected.")
+                Return
+            End If
+            If CboBaudRates.SelectedItem Is Nothing Then
+                LogMessage("⚠️ ERROR", "No baud rate selected.")
+                Return
+            End If
+
             Try
-                SerialPort.Write("OFF")
-                LogMessage("PC", "Sent OFF")
+                SerialPort = New SerialPort(CboPorts.SelectedItem.ToString(), CInt(CboBaudRates.SelectedItem)) With {
+                    .NewLine = vbLf
+                }
+                SerialPort.Open()
+                isConnected = True
+                BtnConnectDisconnect.Content = "Disconnect"
+                LogMessage("INFO", $"Connected at {CboPorts.SelectedItem}, baud: {CboBaudRates.SelectedItem}")
             Catch ex As Exception
-                LogMessage("ERROR", "Write error: " & ex.Message)
+                LogMessage("❌ ERROR", "Failed to connect: " & ex.Message)
+            End Try
+        Else
+            Try
+                If SerialPort IsNot Nothing Then
+                    If SerialPort.IsOpen Then SerialPort.Close()
+                    SerialPort.Dispose()
+                    SerialPort = Nothing
+                End If
+                isConnected = False
+                BtnConnectDisconnect.Content = "Connect"
+                LogMessage("INFO", "Disconnected")
+            Catch ex As Exception
+                LogMessage("❌ ERROR", "Failed to disconnect: " & ex.Message)
             End Try
         End If
+    End Sub
+
+    Private Sub BtnOff_Click(sender As Object, e As RoutedEventArgs)
+        LogMessage("INFO", "Sent OFF")
+        SerialWrite("OFF")
     End Sub
 
     Private Sub BtnOn_Click(sender As Object, e As RoutedEventArgs)
-        If isConnected AndAlso SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then
-            Try
-                SerialPort.Write("ON")
-                LogMessage("PC", "Sent ON")
-            Catch ex As Exception
-                LogMessage("ERROR", "Write error: " & ex.Message)
-            End Try
-        End If
+        LogMessage("INFO", "Sent ON")
+        SerialWrite("ON")
     End Sub
 
+    Private Sub Window_KeyDown_1(sender As Object, e As KeyEventArgs)
+        If e.Key = Key.Space Then
+            LogMessage("INFO", "Sent SPACE")
+            SerialWrite(" ")
+        End If
+    End Sub
 End Class

@@ -9,7 +9,7 @@
 		Height="400"
 		Width="600"
 		Loaded="Window_Loaded"
-		>
+		KeyDown="Window_KeyDown_1">
 	<Grid Margin="20">
 		<!-- Two main columns -->
 		<Grid.ColumnDefinitions>
@@ -21,7 +21,7 @@
 		<!-- LEFT: Logs -->
 		<TextBox x:Name="TxtData"
 				 Grid.Column="0"
-				 Margin="0,0,8,0"
+				 Margin="0,0,20,0"
 				 FontSize="14"
 				 IsReadOnly="True"
 				 VerticalScrollBarVisibility="Auto"
