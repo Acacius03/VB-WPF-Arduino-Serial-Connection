@@ -99,7 +99,7 @@ Class MainWindow
     ' 🔹 Helper: Log with timestamp + port name
     Private Sub LogMessage(source As String, message As String)
         Dim timestamp As String = DateTime.Now.ToString("HH:mm:ss")
-        Dim portLabel As String = If(String.IsNullOrEmpty(currentPort), "NO-PORT", currentPort)
+        Dim portLabel As String = If(String.IsNullOrEmpty(source), "UNKNOWN", source)
         Dim line As String = $"[{timestamp}] {portLabel}: {message}"
         TxtData.AppendText(line & Environment.NewLine)
         TxtData.ScrollToEnd()
