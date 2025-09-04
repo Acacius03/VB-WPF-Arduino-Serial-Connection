@@ -57,6 +57,24 @@
 						  Height="28"
 						  VerticalAlignment="Center" />
 			</Grid>
+			<Grid Margin="0,0,0,8">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
+					<!-- Label fixed size -->
+					<ColumnDefinition Width="*" />
+					<!-- ComboBox expands -->
+				</Grid.ColumnDefinitions>
+				<Label Content="Baud:"
+					   Grid.Column="0"
+					   VerticalAlignment="Center"
+					   FontSize="14"
+					   FontWeight="Bold"
+					   Margin="0,0,8,0" />
+				<ComboBox x:Name="CboBaudRates"
+						  Grid.Column="1"
+						  Height="28"
+						  VerticalAlignment="Center" />
+			</Grid>
 			<Button x:Name="BtnConnectDisconnect"
 					Content="Connect"
 					Margin="0,0,0,8"
