@@ -6,95 +6,72 @@
 		xmlns:local="clr-namespace:Arduino_Serial_Connection"
 		mc:Ignorable="d"
 		Title="Arduino Serial Connection"
-		Height="400"
-		Width="600"
-		Loaded="Window_Loaded">
-	<Grid Margin="20">
-		<!-- Two main columns -->
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="3*" />
-			<!-- Left log viewer -->
-			<ColumnDefinition Width="2*" />
-			<!-- Right controls -->
-		</Grid.ColumnDefinitions>
-		<!-- LEFT: Logs -->
-		<TextBox x:Name="TxtData"
-				 Grid.Column="0"
-				 Margin="0,0,20,0"
-				 FontSize="14"
-				 IsReadOnly="True"
-				 VerticalScrollBarVisibility="Auto"
-				 TextWrapping="Wrap"
-				 AcceptsReturn="True" />
-		<!-- RIGHT: Controls -->
-		<StackPanel Grid.Column="1"
-					Orientation="Vertical"
-					VerticalAlignment="Top">
-			<Button x:Name="BtnScanPorts"
-					Content="Scan Ports"
-					Margin="0,0,0,8"
-					Padding="6"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Click="BtnScanPorts_Click" />
-			<!-- Row with Label + ComboBox -->
-			<Grid Margin="0,0,0,8">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="Auto" />
-					<!-- Label fixed size -->
-					<ColumnDefinition Width="*" />
-					<!-- ComboBox expands -->
-				</Grid.ColumnDefinitions>
-				<Label Content="Port:"
-					   Grid.Column="0"
-					   VerticalAlignment="Center"
-					   FontSize="14"
+		MinWidth="480"
+		Loaded="Window_Loaded"
+		Background="#fafafa"
+		Closing="Window_Closing"
+		ResizeMode="NoResize"
+		WindowStartupLocation="CenterScreen"
+		SizeToContent="WidthAndHeight">
+	<DockPanel>
+		<StatusBar DockPanel.Dock="Bottom"
+				   Background="#eeeeee"
+				   Padding="8">
+			<StatusBarItem>
+				<TextBlock x:Name="TxtStatus"
+						   Text="Disconnected"
+						   FontStyle="Italic"
+						   Foreground="Gray" />
+			</StatusBarItem>
+		</StatusBar>
+		<StackPanel DockPanel.Dock="Bottom"
+					Margin="20,0,20,12">
+			<TextBlock Text="Log Output"
+					   FontSize="16"
 					   FontWeight="Bold"
-					   Margin="0,0,8,0" />
-				<ComboBox x:Name="CboPorts"
-						  Grid.Column="1"
-						  Height="28"
-						  VerticalAlignment="Center" />
-			</Grid>
-			<Grid Margin="0,0,0,8">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="Auto" />
-					<!-- Label fixed size -->
-					<ColumnDefinition Width="*" />
-					<!-- ComboBox expands -->
-				</Grid.ColumnDefinitions>
-				<Label Content="Baud:"
-					   Grid.Column="0"
-					   VerticalAlignment="Center"
-					   FontSize="14"
-					   FontWeight="Bold"
-					   Margin="0,0,8,0" />
-				<ComboBox x:Name="CboBaudRates"
-						  Grid.Column="1"
-						  Height="28"
-						  VerticalAlignment="Center" />
-			</Grid>
-			<Button x:Name="BtnConnectDisconnect"
-					Content="Connect"
-					Margin="0,0,0,8"
-					Padding="6"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Click="BtnConnectDisconnect_Click" />
-			<Button x:Name="BtnOff"
-					Content="OFF"
-					Margin="0,0,0,8"
-					Padding="6"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Click="BtnOff_Click" />
-			<Button x:Name="BtnOn"
-					Content="On"
-					Margin="0,0,0,8"
-					Padding="6"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Click="BtnOn_Click" />
+					   Margin="0,0,0,8" />
+			<Border Padding="8"
+					BorderBrush="#cccccc"
+					BorderThickness="1"
+					CornerRadius="4"
+					Background="White"
+					SnapsToDevicePixels="True"
+					Height="110">
+				<TextBox x:Name="TxtData"
+						 FontSize="14"
+						 IsReadOnly="True"
+						 BorderThickness="0"
+						 VerticalScrollBarVisibility="Auto"
+						 TextWrapping="Wrap"
+						 AcceptsReturn="True"
+						 Background="Transparent" />
+			</Border>
 		</StackPanel>
-	</Grid>
+		<StackPanel Orientation="Vertical"
+					Margin="20"
+					DockPanel.Dock="Top">
+			<Button x:Name="BtnOpenConnector"
+					Content="Connect to Port"
+					Margin="0,0,0,8"
+					Padding="8"
+					FontSize="14"
+					FontWeight="SemiBold"
+					Background="#007ACC"
+					Foreground="White"
+					Click="BtnOpenConnector_Click" />
+			<ToggleButton x:Name="BtnToggleOnOff"
+						  Content="Turn ON"
+						  Margin="0,0,0,10"
+						  Padding="8"
+						  FontSize="14"
+						  FontWeight="SemiBold"
+						  Background="#4CAF50"
+						  Foreground="White"
+						  BorderThickness="0"
+						  Height="36"
+						  Checked="BtnToggleOnOff_Checked"
+						  Unchecked="BtnToggleOnOff_Unchecked"
+						  IsEnabled="False" />
+		</StackPanel>
+	</DockPanel>
 </Window>
