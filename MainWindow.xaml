@@ -64,6 +64,20 @@
 					FontSize="14"
 					FontWeight="SemiBold"
 					Click="BtnConnectDisconnect_Click" />
+			<Button x:Name="BtnOff"
+					Content="OFF"
+					Margin="0,0,0,8"
+					Padding="6"
+					FontSize="14"
+					FontWeight="SemiBold"
+					Click="BtnOff_Click" />
+			<Button x:Name="BtnOn"
+					Content="On"
+					Margin="0,0,0,8"
+					Padding="6"
+					FontSize="14"
+					FontWeight="SemiBold"
+					Click="BtnOn_Click" />
 		</StackPanel>
 	</Grid>
 </Window>

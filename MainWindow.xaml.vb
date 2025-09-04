@@ -138,4 +138,12 @@ Class MainWindow
             CboPorts_SelectionChanged(Nothing, Nothing)
         End If
     End Sub
+
+    Private Sub BtnOff_Click(sender As Object, e As RoutedEventArgs)
+        serialPort.Write("OFF")
+    End Sub
+
+    Private Sub BtnOn_Click(sender As Object, e As RoutedEventArgs)
+        serialPort.Write("ON")
+    End Sub
 End Class
