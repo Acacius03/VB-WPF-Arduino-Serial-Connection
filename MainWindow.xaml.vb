@@ -54,6 +54,17 @@ Class MainWindow
 
     Private Sub BtnConnectDisconnect_Click(sender As Object, e As RoutedEventArgs)
         If Not isConnected Then
+            ' 🔹 If no port was chosen, use the first available one
+            If currentPort = "" OrElse currentBaud = 0 Then
+                If CboPorts.Items.Count > 0 Then
+                    ' pick first item in ComboBox
+                    CboPorts.SelectedIndex = 0
+                    ' trigger detection routine
+                    CboPorts_SelectionChanged(Nothing, Nothing)
+                End If
+            End If
+
+            ' still no port? then error
             If currentPort = "" OrElse currentBaud = 0 Then
                 MessageBox.Show("⚠️ Please select a valid port and detect baud rate first.")
                 Return
@@ -61,8 +72,8 @@ Class MainWindow
 
             Try
                 serialPort = New SerialPort(currentPort, currentBaud) With {
-                    .NewLine = vbLf ' Arduino usually ends with "\n"
-                    }
+                .NewLine = vbLf ' Arduino usually ends with "\n"
+            }
                 serialPort.Open()
                 isConnected = True
                 BtnConnectDisconnect.Content = "Disconnect"
@@ -83,6 +94,7 @@ Class MainWindow
             End Try
         End If
     End Sub
+
 
     ' 🔹 Helper: Log with timestamp + port name
     Private Sub LogMessage(source As String, message As String)
@@ -112,6 +124,18 @@ Class MainWindow
                 serialPort.Write(" ") ' send space char (ASCII 32)
                 LogMessage("PC", "Sent SPACE (toggle request)")
             End If
+        End If
+    End Sub
+
+    Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
+        ' 🔹 Automatically scan ports when app starts
+        BtnScanPorts_Click(Nothing, Nothing)
+
+        ' If at least one port is found, preselect it
+        If CboPorts.Items.Count > 0 Then
+            CboPorts.SelectedIndex = 0
+            ' run baud detection for the first port
+            CboPorts_SelectionChanged(Nothing, Nothing)
         End If
     End Sub
 End Class

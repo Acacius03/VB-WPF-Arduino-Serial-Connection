@@ -7,7 +7,9 @@
 		mc:Ignorable="d"
 		Title="Arduino Serial Connection"
 		Height="400"
-		Width="600">
+		Width="600"
+		Loaded="Window_Loaded"
+		>
 	<Grid Margin="20">
 		<!-- Two main columns -->
 		<Grid.ColumnDefinitions>
