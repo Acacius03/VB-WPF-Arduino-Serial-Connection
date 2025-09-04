@@ -15,9 +15,7 @@ Class MainWindow
     Private Sub PopulatePorts()
         Dim ports() As String = SerialPort.GetPortNames()
         CboPorts.ItemsSource = ports
-        If ports.Length = 0 Then
-            LogMessage("INFO", "No serial ports found.")
-        End If
+        If ports.Length = 0 Then LogMessage("INFO", "No serial ports found.")
     End Sub
 
     Private Sub SerialWrite(text As String)
@@ -25,7 +23,7 @@ Class MainWindow
         Try
             SerialPort.Write(text)
         Catch ex As Exception
-            LogMessage("❌ ERROR", ex.Message)
+            LogMessage("WRITE ERROR", ex.Message)
         End Try
     End Sub
 
@@ -33,13 +31,17 @@ Class MainWindow
     Private Sub SerialPort_DataReceived(sender As Object, e As SerialDataReceivedEventArgs) Handles SerialPort.DataReceived
         Try
             Dim raw As String = SerialPort.ReadLine().Trim()
-            Dispatcher.BeginInvoke(Sub()
-                                       LogMessage(CboPorts.SelectedItem?.ToString(), raw)
-                                   End Sub)
+            Dispatcher.BeginInvoke(
+                Sub()
+                    LogMessage(CboPorts.SelectedItem?.ToString(), raw)
+                End Sub
+            )
         Catch ex As Exception
-            Dispatcher.BeginInvoke(Sub()
-                                       LogMessage("ERROR", "Read error: " & ex.Message)
-                                   End Sub)
+            Dispatcher.BeginInvoke(
+                Sub()
+                    LogMessage("READ ERROR", ex.Message)
+                End Sub
+            )
         End Try
     End Sub
 
@@ -57,11 +59,11 @@ Class MainWindow
         If Not isConnected Then
             ' 🔹 If no port or baud rate is chosen, stop
             If CboPorts.SelectedItem Is Nothing Then
-                LogMessage("⚠️ ERROR", "No port selected.")
+                LogMessage("WARNING", "No port selected.")
                 Return
             End If
             If CboBaudRates.SelectedItem Is Nothing Then
-                LogMessage("⚠️ ERROR", "No baud rate selected.")
+                LogMessage("WARNING", "No baud rate selected.")
                 Return
             End If
 
@@ -74,7 +76,7 @@ Class MainWindow
                 BtnConnectDisconnect.Content = "Disconnect"
                 LogMessage("INFO", $"Connected at {CboPorts.SelectedItem}, baud: {CboBaudRates.SelectedItem}")
             Catch ex As Exception
-                LogMessage("❌ ERROR", "Failed to connect: " & ex.Message)
+                LogMessage("ERROR", "Failed to connect: " & ex.Message)
             End Try
         Else
             Try
@@ -87,7 +89,7 @@ Class MainWindow
                 BtnConnectDisconnect.Content = "Connect"
                 LogMessage("INFO", "Disconnected")
             Catch ex As Exception
-                LogMessage("❌ ERROR", "Failed to disconnect: " & ex.Message)
+                LogMessage("ERROR", "Failed to disconnect: " & ex.Message)
             End Try
         End If
     End Sub
@@ -102,10 +104,4 @@ Class MainWindow
         SerialWrite("ON")
     End Sub
 
-    Private Sub Window_KeyDown_1(sender As Object, e As KeyEventArgs)
-        If e.Key = Key.Space Then
-            LogMessage("INFO", "Sent SPACE")
-            SerialWrite(" ")
-        End If
-    End Sub
 End Class
