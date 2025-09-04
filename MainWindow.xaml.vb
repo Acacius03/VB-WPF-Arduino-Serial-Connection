@@ -61,10 +61,11 @@ Class MainWindow
 
             Try
                 serialPort = New SerialPort(currentPort, currentBaud)
+                serialPort.NewLine = vbLf ' Arduino usually ends with "\n"
                 serialPort.Open()
                 isConnected = True
                 BtnConnectDisconnect.Content = "Disconnect"
-                MessageBox.Show($"🔌 Connected to {currentPort} at {currentBaud} baud.")
+                LogMessage("INFO", $"Connected at {currentBaud} baud")
             Catch ex As Exception
                 MessageBox.Show("❌ Failed to connect: " & ex.Message)
             End Try
@@ -75,10 +76,31 @@ Class MainWindow
                 End If
                 isConnected = False
                 BtnConnectDisconnect.Content = "Connect"
-                MessageBox.Show("🔌 Disconnected.")
+                LogMessage("INFO", "Disconnected")
             Catch ex As Exception
                 MessageBox.Show("❌ Failed to disconnect: " & ex.Message)
             End Try
         End If
+    End Sub
+
+    ' 🔹 Helper: Log with timestamp + port name
+    Private Sub LogMessage(source As String, message As String)
+        Dim timestamp As String = DateTime.Now.ToString("HH:mm:ss")
+        Dim portLabel As String = If(String.IsNullOrEmpty(currentPort), "NO-PORT", currentPort)
+        Dim line As String = $"[{timestamp}] {portLabel}: {message}"
+        TxtData.AppendText(line & Environment.NewLine)
+        TxtData.ScrollToEnd()
+    End Sub
+
+    ' 🔹 Capture Arduino output
+    Private Sub serialPort_DataReceived(sender As Object, e As SerialDataReceivedEventArgs) Handles serialPort.DataReceived
+        Try
+            Dim raw As String = serialPort.ReadLine().Trim()
+            Dispatcher.Invoke(Sub()
+                                  LogMessage(currentPort, raw)
+                              End Sub)
+        Catch ex As Exception
+            ' ignore timeouts / disconnects
+        End Try
     End Sub
 End Class

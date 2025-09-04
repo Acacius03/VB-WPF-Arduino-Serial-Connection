@@ -1,51 +1,67 @@
 ﻿<Window x:Class="MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Arduino_Serial_Connection"
-        mc:Ignorable="d"
-        Title="MainWindow">
-	<Grid Margin="20" >
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:Arduino_Serial_Connection"
+		mc:Ignorable="d"
+		Title="Arduino Serial Connection"
+		Height="400"
+		Width="600">
+	<Grid Margin="20">
+		<!-- Two main columns -->
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="auto" />
-			<ColumnDefinition Width="200" />
+			<ColumnDefinition Width="3*" />
+			<!-- Left log viewer -->
+			<ColumnDefinition Width="2*" />
+			<!-- Right controls -->
 		</Grid.ColumnDefinitions>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto" />
-			<RowDefinition Height="Auto" />
-			<RowDefinition Height="Auto" />
-		</Grid.RowDefinitions>
-		<Button x:Name="BtnScanPorts"
-				Content="Scan Ports"
-				Grid.Row="0"
-				Grid.Column="0"
-				Grid.ColumnSpan="2"
-				Margin="0,0,0,8"
-				Padding="4"
-				FontSize="16"
-				FontWeight="SemiBold"
-				Click="BtnScanPorts_Click" />
-		<Label Content="Port:"
-			   Grid.Row="1"
-			   Grid.Column="0"
-			   FontSize="16"
-			   FontWeight="Bold" />
-		<ComboBox x:Name="CboPorts"
-				  Grid.ColumnSpan="2"
-				  Height="32"
-				  Margin="91,39,0,0"
-				  Grid.RowSpan="3"
-				  VerticalAlignment="Top" />
-		<Button x:Name="BtnConnectDisconnect"
-				Content="Connect"
-				Grid.Row="3"
-				Grid.Column="0"
-				Grid.ColumnSpan="2"
-				Margin="0,8,0,0"
-				Padding="4"
-				FontSize="16"
-				FontWeight="SemiBold"
-				Click="BtnConnectDisconnect_Click" />
+		<!-- LEFT: Logs -->
+		<TextBox x:Name="TxtData"
+				 Grid.Column="0"
+				 Margin="0,0,8,0"
+				 FontSize="14"
+				 IsReadOnly="True"
+				 VerticalScrollBarVisibility="Auto"
+				 TextWrapping="Wrap"
+				 AcceptsReturn="True" />
+		<!-- RIGHT: Controls -->
+		<StackPanel Grid.Column="1"
+					Orientation="Vertical"
+					VerticalAlignment="Top">
+			<Button x:Name="BtnScanPorts"
+					Content="Scan Ports"
+					Margin="0,0,0,8"
+					Padding="6"
+					FontSize="14"
+					FontWeight="SemiBold"
+					Click="BtnScanPorts_Click" />
+			<!-- Row with Label + ComboBox -->
+			<Grid Margin="0,0,0,8">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
+					<!-- Label fixed size -->
+					<ColumnDefinition Width="*" />
+					<!-- ComboBox expands -->
+				</Grid.ColumnDefinitions>
+				<Label Content="Port:"
+					   Grid.Column="0"
+					   VerticalAlignment="Center"
+					   FontSize="14"
+					   FontWeight="Bold"
+					   Margin="0,0,8,0" />
+				<ComboBox x:Name="CboPorts"
+						  Grid.Column="1"
+						  Height="28"
+						  VerticalAlignment="Center" />
+			</Grid>
+			<Button x:Name="BtnConnectDisconnect"
+					Content="Connect"
+					Margin="0,0,0,8"
+					Padding="6"
+					FontSize="14"
+					FontWeight="SemiBold"
+					Click="BtnConnectDisconnect_Click" />
+		</StackPanel>
 	</Grid>
 </Window>
