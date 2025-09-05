@@ -161,7 +161,7 @@
 			<lvc:CartesianChart x:Name="ChartTemperature"
 								Grid.Row="1"
 								Grid.Column="1"
-								Margin="0,12">
+								Margin="0,12,0,12">
 				<lvc:CartesianChart.Series>
 					<lvc:LineSeries x:Name="SeriesTemperature"
 									Stroke="Red"
