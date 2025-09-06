@@ -4,7 +4,7 @@
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:Arduino_Serial_Connection"
-		xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+		xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
 		mc:Ignorable="d"
 		Title="Arduino Serial Dashboard"
 		MinWidth="720"
@@ -15,66 +15,66 @@
 		Loaded="Window_Loaded"
 		Closing="Window_Closing"
 		SizeToContent="WidthAndHeight">
+	<Window.Resources>
+		<Style x:Key="Card"
+			   TargetType="Border">
+			<Setter Property="BorderBrush"
+					Value="#ccc" />
+			<Setter Property="BorderThickness"
+					Value="1" />
+			<Setter Property="Background"
+					Value="White" />
+			<Setter Property="Margin"
+					Value="4" />
+			<Setter Property="Padding"
+					Value="4" />
+			<Setter Property="CornerRadius"
+					Value="12" />
+		</Style>
+	</Window.Resources>
 	<StackPanel Orientation="Vertical">
-		<Border Background="#ddd"
+		<Border Background="#ccc"
 				Padding="12,8">
 			<Grid>
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
 					<ColumnDefinition Width="Auto" />
-					<ColumnDefinition Width="Auto" />
 				</Grid.ColumnDefinitions>
 				<TextBlock x:Name="TxtStatus"
-						   Text="Disconnected"
-						   FontStyle="Italic"
 						   VerticalAlignment="Center"
-						   HorizontalAlignment="Left" />
-				<ToggleButton x:Name="BtnToggleOnOff"
-							  Grid.Column="1"
-							  Content="Turn ON"
-							  Width="120"
-							  Height="40"
-							  Background="#4CAF50"
-							  Foreground="White"
-							  FontWeight="SemiBold"
-							  Checked="BtnToggleOnOff_Checked"
-							  Unchecked="BtnToggleOnOff_Unchecked"
-							  IsEnabled="False" />
+						   HorizontalAlignment="Left"
+						   Text="Disconnected"
+						   FontStyle="Italic" />
 				<Button x:Name="BtnOpenConnector"
-						Grid.Column="2"
+						Grid.Column="1"
 						Content="Connect"
 						Width="120"
 						Height="40"
-						Margin="8,0,0,0"
 						Background="#007ACC"
 						Foreground="White"
-						FontWeight="SemiBold"
 						Click="BtnOpenConnector_Click" />
 			</Grid>
 		</Border>
-		<Grid Margin="12">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="240" />
-				<ColumnDefinition Width="*" />
-			</Grid.ColumnDefinitions>
+		<Grid Margin="4">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="240" />
 				<RowDefinition Height="240" />
 			</Grid.RowDefinitions>
-			<Border Grid.Row="0"
-					Grid.Column="0"
-					BorderBrush="#ccc"
-					BorderThickness="1"
-					Background="White"
-					Margin="4"
-					CornerRadius="12">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="240" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<!-- Humidity gauge -->
+			<Border Style="{StaticResource Card}"
+					Grid.Row="0"
+					Grid.Column="0">
 				<StackPanel VerticalAlignment="Center">
 					<TextBlock Text="Humidity"
 							   FontWeight="Bold"
-							   FontSize="16"
 							   TextAlignment="Center"
 							   Padding="0,4" />
-					<Grid Width="160"
+					<Grid x:Name="GaugeHumidity"
+						  Width="160"
 						  Height="160">
 						<Ellipse Stroke="#ddd"
 								 StrokeThickness="28" />
@@ -85,68 +85,53 @@
 							  StrokeStartLineCap="Round"
 							  StrokeEndLineCap="Round" />
 						<TextBlock x:Name="TxtHumidityPercent"
-								   Text="0%"
-								   FontSize="28"
 								   HorizontalAlignment="Center"
 								   VerticalAlignment="Center"
+								   Text="0%"
+								   FontSize="28"
 								   FontWeight="Bold" />
 					</Grid>
 				</StackPanel>
 			</Border>
-			<lvc:CartesianChart x:Name="ChartHumidity"
-								Grid.Row="0"
-								Grid.Column="1"
-								Margin="0,12">
-				<lvc:CartesianChart.Series>
-					<lvc:LineSeries x:Name="SeriesHumidity"
-									Stroke="Blue"
-									Fill="#55007ACC"
-									PointGeometrySize="5" />
-				</lvc:CartesianChart.Series>
-				<lvc:CartesianChart.AxisX>
-					<lvc:Axis LabelsRotation="0" />
-				</lvc:CartesianChart.AxisX>
-				<lvc:CartesianChart.AxisY>
-					<lvc:Axis MinValue="0"
-							  MaxValue="100"
-							  Title="Humidity (%)" />
-				</lvc:CartesianChart.AxisY>
-			</lvc:CartesianChart>
-			<Border Grid.Row="1"
-					Grid.Column="0"
-					BorderBrush="#ccc"
-					BorderThickness="1"
-					Background="White"
-					Margin="4"
-					CornerRadius="12">
-				<Grid VerticalAlignment="Center"
-					  HorizontalAlignment="Center">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="*" />
-						<ColumnDefinition Width="*" />
-					</Grid.ColumnDefinitions>
+			<!-- Humidity chart -->
+			<Border Style="{StaticResource Card}"
+					Grid.Row="0"
+					Grid.Column="1">
+				<oxy:PlotView x:Name="HumidityPlot"
+							  Background="{x:Null}" />
+			</Border>
+			<!-- Temperature gauge -->
+			<Border Style="{StaticResource Card}"
+					Grid.Row="1"
+					Grid.Column="0">
+				<Grid HorizontalAlignment="Center"
+					  VerticalAlignment="Center">
 					<Grid.RowDefinitions>
 						<RowDefinition Height="auto" />
 						<RowDefinition Height="160" />
 					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="auto" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
 					<TextBlock Grid.Row="0"
+							   Grid.Column="0"
 							   Grid.ColumnSpan="2"
 							   Text="Temperature"
 							   FontWeight="Bold"
-							   FontSize="16"
-							   TextAlignment="Center" />
+							   TextAlignment="Center"
+							   Padding="0,4" />
 					<Border Grid.Row="1"
+							Grid.RowSpan="2"
 							Grid.Column="0"
-							HorizontalAlignment="Right"
 							Width="20"
-							Height="140"
+							Height="160"
 							Background="#ddd"
-							Margin="0,0,20,0">
+							CornerRadius="12,12,4,4">
 						<Rectangle x:Name="RectangleTemp"
 								   Width="20"
 								   Height="0"
-								   Fill="#FF5722"
-								   VerticalAlignment="Bottom" />
+								   Fill="#FF5722" />
 					</Border>
 					<TextBlock x:Name="TxtTemperature"
 							   Grid.Row="1"
@@ -154,42 +139,25 @@
 							   Text="0 °C"
 							   FontSize="28"
 							   FontWeight="Bold"
-							   HorizontalAlignment="Left"
+							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center" />
 				</Grid>
 			</Border>
-			<lvc:CartesianChart x:Name="ChartTemperature"
-								Grid.Row="1"
-								Grid.Column="1"
-								Margin="0,12,0,12">
-				<lvc:CartesianChart.Series>
-					<lvc:LineSeries x:Name="SeriesTemperature"
-									Stroke="Red"
-									Fill="#55FF5722"
-									PointGeometrySize="5" />
-				</lvc:CartesianChart.Series>
-				<lvc:CartesianChart.AxisX>
-					<lvc:Axis LabelsRotation="0" />
-				</lvc:CartesianChart.AxisX>
-				<lvc:CartesianChart.AxisY>
-					<lvc:Axis MinValue="-20"
-							  MaxValue="70"
-							  Title="Temperature (°C)" />
-				</lvc:CartesianChart.AxisY>
-			</lvc:CartesianChart>
+			<!-- Temperature chart -->
+			<Border Style="{StaticResource Card}"
+					Grid.Row="1"
+					Grid.Column="1">
+				<oxy:PlotView x:Name="TemperaturePlot"
+							  Background="{x:Null}" />
+			</Border>
 		</Grid>
-		<TextBlock Text="Log Output"
-				   FontSize="16"
+		<!-- Log Output -->
+		<TextBlock Text="Output Log"
 				   FontWeight="Bold"
 				   Margin="12,0" />
-		<Border Padding="8"
-				Margin="12"
-				BorderBrush="#ccc"
-				BorderThickness="1"
-				CornerRadius="4"
-				Background="White"
-				Height="120"
-				SnapsToDevicePixels="True">
+		<Border Style="{StaticResource Card}"
+				Margin="8,4,8,8"
+				Height="120">
 			<TextBox x:Name="TxtData"
 					 FontSize="12"
 					 IsReadOnly="True"
