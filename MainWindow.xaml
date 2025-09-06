@@ -7,12 +7,11 @@
 		mc:Ignorable="d"
 		Title="Arduino Serial Connection"
 		MinWidth="480"
-		Loaded="Window_Loaded"
 		Background="#fafafa"
-		Closing="Window_Closing"
 		ResizeMode="NoResize"
 		WindowStartupLocation="CenterScreen"
-		SizeToContent="WidthAndHeight">
+		SizeToContent="WidthAndHeight"
+		Closing="Window_Closing">
 	<Window.Resources>
 		<Style TargetType="Button"
 			   x:Key="CustomConnectButton">

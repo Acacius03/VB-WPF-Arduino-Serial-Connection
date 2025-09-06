@@ -73,10 +73,6 @@ Class MainWindow
         End Try
     End Sub
 
-    Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
-        TryConnect()
-    End Sub
-
     Private Sub BtnToggleOnOff_Checked(sender As Object, e As RoutedEventArgs)
         SerialWrite("ON")
     End Sub
