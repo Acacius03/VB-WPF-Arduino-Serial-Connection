@@ -11,14 +11,12 @@ Class MainWindow
         End Get
     End Property
     Private Sub UpdateUiForConnection()
-        Dim Status As String = "Disconnected"
+        Dim status As String = If(IsConnected,
+                                  $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud",
+                                  "Disconnected")
 
-        If IsConnected Then
-            Status = $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud"
-        End If
-
-        TxtStatus.Text = Status
-        LogMessage("SYSTEM", Status)
+        TxtStatus.Text = status
+        LogMessage("SYSTEM", status)
     End Sub
 
     Public Property HumidityPlotModel As PlotModel
@@ -67,33 +65,40 @@ Class MainWindow
     ' ----------------- Serial Handling -----------------
     Private Sub SerialPort_DataReceived(sender As Object, e As SerialDataReceivedEventArgs) Handles SerialPort.DataReceived
         Try
-            Dim raw As String = SerialPort.ReadExisting()
-            Dispatcher.BeginInvoke(Sub() ParseAndDisplayData(raw))
+            Dim line As String = SerialPort.ReadLine().Trim()
+            Dispatcher.BeginInvoke(Sub() ParseAndDisplayData(line))
         Catch ex As Exception
-            Dispatcher.BeginInvoke(Sub() LogMessage("READ ERROR", ex.Message))
+            Dispatcher.BeginInvoke(
+                Sub()
+                    LogMessage("READ ERROR", ex.Message)
+                    UpdateUiForConnection()
+                End Sub
+            )
         End Try
     End Sub
 
-    Private Sub ParseAndDisplayData(data As String)
-        Dim lines = data.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
-        For Each line In lines
-            If line.StartsWith("H") Then
-                Dim humVal As Double
-                If Double.TryParse(Mid(line, 2), humVal) Then
-                    HandleHumidity(humVal)
-                Else
-                    LogMessage("PARSE ERROR", $"Invalid humidity data: {line}")
-                End If
+    Private Sub ParseAndDisplayData(line As String)
+        If String.IsNullOrWhiteSpace(line) Then Return
 
-            ElseIf line.StartsWith("T") Then
-                Dim tempVal As Double
-                If Double.TryParse(Mid(line, 2), tempVal) Then
-                    HandleTemperature(tempVal)
-                Else
-                    LogMessage("PARSE ERROR", $"Invalid temperature data: {line}")
-                End If
+        If line.StartsWith("H") Then
+            Dim humVal As Double
+            If Double.TryParse(line.Substring(1), humVal) Then
+                HandleHumidity(humVal)
+            Else
+                LogMessage("PARSE ERROR", $"Invalid humidity: {line}")
             End If
-        Next
+
+        ElseIf line.StartsWith("T") Then
+            Dim tempVal As Double
+            If Double.TryParse(line.Substring(1), tempVal) Then
+                HandleTemperature(tempVal)
+            Else
+                LogMessage("PARSE ERROR", $"Invalid temperature: {line}")
+            End If
+
+        Else
+            LogMessage("PARSE ERROR", $"Unknown prefix: {line}")
+        End If
     End Sub
 
     ' ----------------- Humidity -----------------
@@ -103,7 +108,9 @@ Class MainWindow
         Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
         HumiditySeries.Points.Add(New DataPoint(nowX, humVal))
 
-        If HumiditySeries.Points.Count > ChartLimit Then HumiditySeries.Points.RemoveAt(0)
+        While HumiditySeries.Points.Count > ChartLimit
+            HumiditySeries.Points.RemoveAt(0)
+        End While
 
         UpdateXAxis(HumidityPlotModel, nowX)
         HumidityPlotModel.InvalidatePlot(True)
@@ -157,7 +164,6 @@ Class MainWindow
     End Sub
 
     ' ----------------- Temperature -----------------
-    ' ----------------- Temperature -----------------
     Private Sub HandleTemperature(tempVal As Double)
         TxtTemperature.Text = $"{tempVal} °C"
 
@@ -189,7 +195,10 @@ Class MainWindow
         Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
         TemperatureSeries.Points.Add(New DataPoint(nowX, tempVal))
 
-        If TemperatureSeries.Points.Count > ChartLimit Then TemperatureSeries.Points.RemoveAt(0)
+
+        While TemperatureSeries.Points.Count > ChartLimit
+            TemperatureSeries.Points.RemoveAt(0)
+        End While
 
         UpdateXAxis(TemperaturePlotModel, nowX)
         TemperaturePlotModel.InvalidatePlot(True)
@@ -210,6 +219,8 @@ Class MainWindow
         TryConnect()
     End Sub
 
+    Private HumidityArcSegment As ArcSegment
+
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         ' Humidity chart
         HumidityPlotModel = New PlotModel With {.Title = "Humidity (%)"}
@@ -229,8 +240,14 @@ Class MainWindow
     End Sub
 
     Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles Me.Closing
-        If SerialPort Is Nothing OrElse Not SerialPort.IsOpen Then Return
-        DisconnectSerial()
+        If Not IsConnected Then Return
+        Try
+            SerialPort.Close()
+            LogMessage("INFO", "Disconnected on window close")
+        Catch ex As Exception
+            LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
+        End Try
+        UpdateUiForConnection()
     End Sub
 
     ' ----------------- Helpers -----------------
