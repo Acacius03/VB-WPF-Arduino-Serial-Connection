@@ -13,6 +13,73 @@
 		ResizeMode="NoResize"
 		WindowStartupLocation="CenterScreen"
 		SizeToContent="WidthAndHeight">
+	<Window.Resources>
+		<Style TargetType="ToggleButton"
+			   x:Key="CustomToggleButton">
+			<Setter Property="Foreground"
+					Value="White" />
+			<Setter Property="FontSize"
+					Value="14" />
+			<Setter Property="FontWeight"
+					Value="SemiBold" />
+			<Setter Property="Height"
+					Value="36" />
+			<Setter Property="Padding"
+					Value="8" />
+			<Setter Property="BorderThickness"
+					Value="0" />
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="ToggleButton">
+						<Border x:Name="border"
+								CornerRadius="4"
+								Background="#4CAF50"
+								BorderThickness="0"
+								Padding="{TemplateBinding Padding}">
+							<ContentPresenter HorizontalAlignment="Center"
+											  VerticalAlignment="Center" />
+						</Border>
+						<ControlTemplate.Triggers>
+							<!-- Hover -->
+							<Trigger Property="IsMouseOver"
+									 Value="True">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#45A049" />
+							</Trigger>
+							<!-- Checked (ON) -->
+							<Trigger Property="IsChecked"
+									 Value="True">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#F44336" />
+								<Setter Property="Content"
+										Value="Turn OFF" />
+							</Trigger>
+							<!-- Unchecked (OFF) -->
+							<Trigger Property="IsChecked"
+									 Value="False">
+								<Setter TargetName="border"
+										Property="Background"
+										Value=" #4CAF50" />
+								<Setter Property="Content"
+										Value="Turn ON" />
+							</Trigger>
+							<!-- Disabled -->
+							<Trigger Property="IsEnabled"
+									 Value="False">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#BDBDBD" />
+								<Setter Property="Opacity"
+										Value="0.6" />
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</Window.Resources>
 	<DockPanel>
 		<StatusBar DockPanel.Dock="Bottom"
 				   Background="#eeeeee"
@@ -60,18 +127,9 @@
 					Foreground="White"
 					Click="BtnOpenConnector_Click" />
 			<ToggleButton x:Name="BtnToggleOnOff"
-						  Content="Turn ON"
-						  Margin="0,0,0,10"
-						  Padding="8"
-						  FontSize="14"
-						  FontWeight="SemiBold"
-						  Background="#4CAF50"
-						  Foreground="White"
-						  BorderThickness="0"
-						  Height="36"
+						  Style="{StaticResource CustomToggleButton}"
 						  Checked="BtnToggleOnOff_Checked"
-						  Unchecked="BtnToggleOnOff_Unchecked"
-						  IsEnabled="False" />
+						  Unchecked="BtnToggleOnOff_Unchecked" />
 		</StackPanel>
 	</DockPanel>
 </Window>

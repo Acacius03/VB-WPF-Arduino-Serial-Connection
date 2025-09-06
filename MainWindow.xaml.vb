@@ -16,8 +16,6 @@ Class MainWindow
 
             If Not _isConnected Then
                 BtnToggleOnOff.IsChecked = False
-                BtnToggleOnOff.Content = "Turn ON"
-                BtnToggleOnOff.Background = New SolidColorBrush(Color.FromRgb(76, 175, 80)) ' Green
                 TxtStatus.Text = "Disconnected"
             End If
         End Set
@@ -32,7 +30,7 @@ Class MainWindow
     End Sub
 
     Private Sub SerialWrite(text As String)
-        If Not isConnected OrElse SerialPort Is Nothing OrElse Not SerialPort.IsOpen Then Return
+        If Not IsConnected OrElse SerialPort Is Nothing OrElse Not SerialPort.IsOpen Then Return
         Try
             SerialPort.Write(text)
         Catch ex As Exception
@@ -65,11 +63,11 @@ Class MainWindow
             Catch ex As Exception
                 TxtStatus.Text = "Connection Failed"
                 LogMessage("ERROR", $"Could not connect: {ex.Message}")
-                isConnected = False
+                IsConnected = False
             End Try
         Else
             TxtStatus.Text = "Disconnected"
-            isConnected = False
+            IsConnected = False
         End If
     End Sub
 
@@ -97,15 +95,11 @@ Class MainWindow
     End Sub
 
     Private Sub BtnToggleOnOff_Checked(sender As Object, e As RoutedEventArgs)
-        BtnToggleOnOff.Content = "Turn OFF"
-        BtnToggleOnOff.Background = New SolidColorBrush(Color.FromRgb(229, 57, 53)) ' 🔴 Red
         LogMessage("INFO", "Sent ON")
         SerialWrite("ON")
     End Sub
 
     Private Sub BtnToggleOnOff_Unchecked(sender As Object, e As RoutedEventArgs)
-        BtnToggleOnOff.Content = "Turn ON"
-        BtnToggleOnOff.Background = New SolidColorBrush(Color.FromRgb(76, 175, 80)) ' 🟢 Green
         LogMessage("INFO", "Sent OFF")
         SerialWrite("OFF")
     End Sub
