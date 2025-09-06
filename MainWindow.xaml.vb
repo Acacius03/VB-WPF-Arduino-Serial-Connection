@@ -3,19 +3,24 @@ Imports OxyPlot
 Imports OxyPlot.Series
 Imports OxyPlot.Axes
 Imports System.Windows.Media.Animation
+Imports System.Windows.Threading
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
-
-    Private SimTimer As Windows.Threading.DispatcherTimer
+    Private SimTimer As DispatcherTimer
     Private RandomGen As New Random()
 
-    Private currentHumidity As Double = 0
+    Private Const ChartLimit As Integer = 30
+    Private Const ChartWindowSeconds As Integer = 60
+
+    Private HumiditySeries As LineSeries
+    Private TemperatureSeries As LineSeries
+
+    Public Property HumidityPlotModel As PlotModel
+    Public Property TemperaturePlotModel As PlotModel
 
     Private Sub StartSimulation()
-        SimTimer = New Windows.Threading.DispatcherTimer() With {
-            .Interval = TimeSpan.FromSeconds(2)
-        }
+        SimTimer = New DispatcherTimer With {.Interval = TimeSpan.FromSeconds(2)}
         AddHandler SimTimer.Tick, AddressOf SimulateArduinoData
         SimTimer.Start()
         LogMessage("SIM", "Simulation started (Arduino emulation)")
@@ -30,16 +35,9 @@ Class MainWindow
     End Sub
 
     Private Sub SimulateArduinoData(sender As Object, e As EventArgs)
-        ' Generate fake humidity between 20–90
-        Dim hum As Double = RandomGen.Next(20, 91)
-        ' Generate fake temperature between -10–50
-        Dim temp As Double = RandomGen.Next(-10, 51)
-
-        ' Fake Arduino format: Hxx and Txx
-        Dim humLine As String = $"H{hum}"
-        Dim tempLine As String = $"T{temp}"
-
-        ' Pass into your normal parser (as if SerialPort sent it)
+        ' Generate fake Arduino data
+        Dim humLine = $"H{RandomGen.Next(20, 91)}"
+        Dim tempLine = $"T{RandomGen.Next(-10, 51)}"
         ParseAndDisplayData(humLine)
         ParseAndDisplayData(tempLine)
     End Sub
@@ -51,39 +49,26 @@ Class MainWindow
     End Property
 
     Private Sub UpdateUiForConnection()
-        Dim status As String = If(IsConnected,
-                                  $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud",
-                                  "Disconnected")
+        Dim status = If(IsConnected,
+                        $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud",
+                        "Disconnected")
         TxtStatus.Text = status
         LogMessage("SYSTEM", status)
     End Sub
 
-    Public Property HumidityPlotModel As PlotModel
-    Public Property TemperaturePlotModel As PlotModel
-
-    Private HumiditySeries As LineSeries
-    Private TemperatureSeries As LineSeries
-
-    Private ChartLimit As Integer = 30
-    Private ChartWindowSeconds As Integer = 60
-
     ' ----------------- Logging -----------------
     Private Sub LogMessage(source As String, message As String)
-        Dim timestamp As String = DateTime.Now.ToString("HH:mm:ss")
-        Dim line As String = $"[{timestamp}] {source}: {message}"
-        TxtData.AppendText(line & Environment.NewLine)
+        Dim timestamp = DateTime.Now.ToString("HH:mm:ss")
+        TxtData.AppendText($"[{timestamp}] {source}: {message}" & Environment.NewLine)
         TxtData.ScrollToEnd()
     End Sub
 
-    ' ----------------- Connection -----------------
+    ' ----------------- Serial Connection -----------------
     Private Sub TryConnect()
         Dim dlg As New SerialPortConnectorWindow()
-        Dim result? As Boolean = dlg.ShowDialog()
-
-        If result.GetValueOrDefault() Then
+        If dlg.ShowDialog().GetValueOrDefault() Then
             ConnectSerialPort(dlg.SelectedPort, dlg.SelectedBaud)
         End If
-
         UpdateUiForConnection()
     End Sub
 
@@ -101,173 +86,132 @@ Class MainWindow
         End Try
     End Sub
 
-    ' ----------------- Serial Handling -----------------
     Private Sub SerialPort_DataReceived(sender As Object, e As SerialDataReceivedEventArgs) Handles SerialPort.DataReceived
         Try
-            Dim line As String = SerialPort.ReadLine().Trim()
+            Dim line = SerialPort.ReadLine().Trim()
             Dispatcher.BeginInvoke(Sub() ParseAndDisplayData(line))
         Catch ex As Exception
-            Dispatcher.BeginInvoke(
-                Sub()
-                    LogMessage("READ ERROR", ex.Message)
-                    UpdateUiForConnection()
-                End Sub
-            )
+            Dispatcher.BeginInvoke(Sub()
+                                       LogMessage("READ ERROR", ex.Message)
+                                       UpdateUiForConnection()
+                                   End Sub)
         End Try
     End Sub
 
+    ' ----------------- Data Parsing -----------------
     Private Sub ParseAndDisplayData(line As String)
         If String.IsNullOrWhiteSpace(line) Then Return
 
-        If line.StartsWith("H") Then
-            Dim humVal As Double
-            If Double.TryParse(line.Substring(1), humVal) Then
-                HandleHumidity(humVal)
-            Else
-                LogMessage("PARSE ERROR", $"Invalid humidity: {line}")
-            End If
+        Dim prefix = line(0)
+        Dim valueStr = line.Substring(1)
+        Dim val As Double
 
-        ElseIf line.StartsWith("T") Then
-            Dim tempVal As Double
-            If Double.TryParse(line.Substring(1), tempVal) Then
-                HandleTemperature(tempVal)
-            Else
-                LogMessage("PARSE ERROR", $"Invalid temperature: {line}")
-            End If
-
-        Else
-            LogMessage("PARSE ERROR", $"Unknown prefix: {line}")
+        If Not Double.TryParse(valueStr, val) Then
+            LogMessage("PARSE ERROR", $"Invalid {If(prefix = "H"c, "humidity", "temperature")}: {line}")
+            Return
         End If
+
+        Select Case prefix
+            Case "H"c : HandleHumidity(val)
+            Case "T"c : HandleTemperature(val)
+            Case Else : LogMessage("PARSE ERROR", $"Unknown prefix: {line}")
+        End Select
     End Sub
 
     ' ----------------- Humidity -----------------
     Private Sub HandleHumidity(humVal As Double)
-        UpdateHumidityArc(humVal)
-
-        Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
-        HumiditySeries.Points.Add(New DataPoint(nowX, humVal))
-
-        While HumiditySeries.Points.Count > ChartLimit
-            HumiditySeries.Points.RemoveAt(0)
-        End While
-
-        UpdateXAxis(HumidityPlotModel, nowX)
-        HumidityPlotModel.InvalidatePlot(True)
+        AnimateProperty(AnimatedHumidityProperty, AnimatedHumidity, Clamp(humVal, 0, 100))
+        UpdateChart(HumidityPlotModel, HumiditySeries, humVal)
     End Sub
 
     Public Shared ReadOnly AnimatedHumidityProperty As DependencyProperty =
-    DependencyProperty.Register("AnimatedHumidity", GetType(Double), GetType(MainWindow),
-                                New PropertyMetadata(0.0, AddressOf OnAnimatedHumidityChanged))
+        DependencyProperty.Register("AnimatedHumidity", GetType(Double), GetType(MainWindow),
+                                    New PropertyMetadata(0.0, AddressOf OnAnimatedHumidityChanged))
 
     Public Property AnimatedHumidity As Double
         Get
             Return CDbl(GetValue(AnimatedHumidityProperty))
         End Get
-        Set(value As Double)
-            SetValue(AnimatedHumidityProperty, value)
+        Set
+            SetValue(AnimatedHumidityProperty, Value)
         End Set
     End Property
 
     Private Shared Sub OnAnimatedHumidityChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
-        Dim wnd As MainWindow = CType(d, MainWindow)
-        wnd.DrawHumidityArc(CDbl(e.NewValue))
+        CType(d, MainWindow).DrawHumidityArc(CDbl(e.NewValue))
     End Sub
-
-
-    Private Sub UpdateHumidityArc(value As Double)
-        value = Math.Max(0, Math.Min(100, value))
-
-        Dim startValue As Double = AnimatedHumidity
-        Dim anim As New DoubleAnimation(startValue, value, TimeSpan.FromMilliseconds(500)) With {
-        .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
-    }
-
-        ' Animate our DP instead of using PathGeometry directly
-        Me.BeginAnimation(AnimatedHumidityProperty, anim)
-    End Sub
-
-
 
     Private Sub DrawHumidityArc(value As Double)
-        Dim angle As Double = value * 360.0 / 100.0
-        Dim radians As Double = Math.PI * angle / 180.0
-
-        Dim width As Double = If(GaugeHumidity.ActualWidth > 0, GaugeHumidity.ActualWidth, GaugeHumidity.Width)
-        Dim height As Double = If(GaugeHumidity.ActualHeight > 0, GaugeHumidity.ActualHeight, GaugeHumidity.Height)
-        Dim strokeThickness As Double = If(ArcHumidity.StrokeThickness > 0, ArcHumidity.StrokeThickness, 28)
-
-        Dim centerX = width / 2.0
-        Dim centerY = height / 2.0
-        Dim radius = Math.Min(width, height) / 2.0 - strokeThickness / 2.0
-
-        Dim startPoint = New Point(centerX, centerY - radius)
-        Dim endPoint = New Point(centerX + radius * Math.Sin(radians), centerY - radius * Math.Cos(radians))
-        Dim isLargeArc = angle > 180.0
-
+        Dim angle = value * 360 / 100
+        Dim radians = Math.PI * angle / 180
+        Dim width = If(GaugeHumidity.ActualWidth > 0, GaugeHumidity.ActualWidth, GaugeHumidity.Width)
+        Dim height = If(GaugeHumidity.ActualHeight > 0, GaugeHumidity.ActualHeight, GaugeHumidity.Height)
+        Dim stroke = If(ArcHumidity.StrokeThickness > 0, ArcHumidity.StrokeThickness, 28)
+        Dim cx = width / 2, cy = height / 2
+        Dim r = Math.Min(width, height) / 2 - stroke / 2
+        Dim startPoint = New Point(cx, cy - r)
+        Dim endPoint = New Point(cx + r * Math.Sin(radians), cy - r * Math.Cos(radians))
         Dim figure = New PathFigure() With {.StartPoint = startPoint}
         figure.Segments.Add(New ArcSegment() With {
                                 .Point = endPoint,
-                                .Size = New Size(radius, radius),
-                                .IsLargeArc = isLargeArc,
+                                .Size = New Size(r, r),
+                                .IsLargeArc = angle > 180,
                                 .SweepDirection = SweepDirection.Clockwise
                             })
-
-        Dim geo = New PathGeometry()
-        geo.Figures.Add(figure)
-        ArcHumidity.Data = geo
-
+        ArcHumidity.Data = New PathGeometry() With {.Figures = New PathFigureCollection({figure})}
         TxtHumidityPercent.Text = $"{Math.Round(value)}%"
     End Sub
 
     ' ----------------- Temperature -----------------
     Private Sub HandleTemperature(tempVal As Double)
         TxtTemperature.Text = $"{tempVal} °C"
-
-        Dim hotMaxHeight As Double = 128
-        Dim coldMaxHeight As Double = 32
-
-        Dim hotHeight As Double = 0
-        Dim coldHeight As Double = 0
-
-        If tempVal > 0 Then
-            hotHeight = MapVPB(tempVal, 0, 60, 0, hotMaxHeight)
-        ElseIf tempVal < 0 Then
-            coldHeight = MapVPB(tempVal, -20, 0, coldMaxHeight, 0)
-        End If
-
-        Dim startHot As Double = If(Double.IsNaN(RectangleHotTemp.Height), 0, RectangleHotTemp.Height)
-        Dim startCold As Double = If(Double.IsNaN(RectangleColdTemp.Height), 0, RectangleColdTemp.Height)
-
-        ' Animate hot bar
-        Dim animHot As New DoubleAnimation(startHot, hotHeight, TimeSpan.FromMilliseconds(500)) With {
-    .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
-}
-        RectangleHotTemp.BeginAnimation(HeightProperty, animHot)
-
-        ' Animate cold bar
-        Dim animCold As New DoubleAnimation(startCold, coldHeight, TimeSpan.FromMilliseconds(500)) With {
-    .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
-}
-        RectangleColdTemp.BeginAnimation(HeightProperty, animCold)
-
-        ' Add to temperature chart
-        Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
-        TemperatureSeries.Points.Add(New DataPoint(nowX, tempVal))
-        While TemperatureSeries.Points.Count > ChartLimit
-            TemperatureSeries.Points.RemoveAt(0)
-        End While
-        UpdateXAxis(TemperaturePlotModel, nowX)
-        TemperaturePlotModel.InvalidatePlot(True)
+        Dim hotHeight = If(tempVal > 0, MapVPB(tempVal, 0, 60, 0, 128), 0)
+        Dim coldHeight = If(tempVal < 0, MapVPB(tempVal, -20, 0, 32, 0), 0)
+        AnimateProperty(HeightProperty, RectangleHotTemp.Height, hotHeight, RectangleHotTemp)
+        AnimateProperty(HeightProperty, RectangleColdTemp.Height, coldHeight, RectangleColdTemp)
+        UpdateChart(TemperaturePlotModel, TemperatureSeries, tempVal)
     End Sub
 
-    ' ----------------- Axis Helper -----------------
-    Private Sub UpdateXAxis(model As PlotModel, nowX As Double)
+    ' ----------------- Helpers -----------------
+    Private Sub AnimateProperty(dp As DependencyProperty, fromValue As Double, toValue As Double, Optional target As FrameworkElement = Nothing)
+        ' Ensure values are valid for animation
+        If Double.IsNaN(fromValue) Then fromValue = 0
+        If Double.IsNaN(toValue) Then toValue = 0
+
+        Dim anim As New DoubleAnimation(fromValue, toValue, TimeSpan.FromMilliseconds(500)) With {
+        .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
+    }
+
+        If target IsNot Nothing Then
+            target.BeginAnimation(dp, anim)
+        Else
+            Me.BeginAnimation(dp, anim)
+        End If
+    End Sub
+
+
+
+    Private Sub UpdateChart(model As PlotModel, series As LineSeries, value As Double)
+        Dim nowX = DateTimeAxis.ToDouble(DateTime.Now)
+        series.Points.Add(New DataPoint(nowX, value))
+        While series.Points.Count > ChartLimit
+            series.Points.RemoveAt(0)
+        End While
         Dim xAxis = TryCast(model.Axes.FirstOrDefault(Function(a) TypeOf a Is DateTimeAxis), DateTimeAxis)
         If xAxis IsNot Nothing Then
             xAxis.Maximum = nowX
             xAxis.Minimum = DateTimeAxis.ToDouble(DateTime.Now.AddSeconds(-ChartWindowSeconds))
         End If
+        model.InvalidatePlot(True)
     End Sub
+
+    Private Function Clamp(value As Double, min As Double, max As Double) As Double
+        Return Math.Max(min, Math.Min(max, value))
+    End Function
+
+    Private Function MapVPB(X As Double, InMin As Double, InMax As Double, OutMin As Double, OutMax As Double) As Double
+        Return (X - InMin) * (OutMax - OutMin) / (InMax - InMin) + OutMin
+    End Function
 
     ' ----------------- UI Events -----------------
     Private Sub BtnSelectPort_Click(sender As Object, e As RoutedEventArgs)
@@ -275,30 +219,14 @@ Class MainWindow
     End Sub
 
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
-        ' Humidity chart
-        HumidityPlotModel = New PlotModel With {.Title = "Humidity (%)"}
-        HumidityPlotModel.Axes.Add(New DateTimeAxis With {.Position = AxisPosition.Bottom, .StringFormat = "HH:mm:ss"})
-        HumidityPlotModel.Axes.Add(New LinearAxis With {.Position = AxisPosition.Left, .Minimum = 0, .Maximum = 100})
-        HumiditySeries = New LineSeries With {.Title = "Humidity"}
-        HumidityPlotModel.Series.Add(HumiditySeries)
-        HumidityPlot.Model = HumidityPlotModel
-
-        ' Temperature chart
-        TemperaturePlotModel = New PlotModel With {.Title = "Temperature (°C)"}
-        TemperaturePlotModel.Axes.Add(New DateTimeAxis With {.Position = AxisPosition.Bottom, .StringFormat = "HH:mm:ss"})
-        TemperaturePlotModel.Axes.Add(New LinearAxis With {.Position = AxisPosition.Left, .Minimum = -20, .Maximum = 60})
-        TemperatureSeries = New LineSeries With {.Title = "Temperature"}
-        TemperaturePlotModel.Series.Add(TemperatureSeries)
-        TemperaturePlot.Model = TemperaturePlotModel
-
+        InitializeChart(HumidityPlotModel, HumiditySeries, "Humidity (%)", 0, 100, HumidityPlot)
+        InitializeChart(TemperaturePlotModel, TemperatureSeries, "Temperature (°C)", -20, 60, TemperaturePlot)
         StartSimulation()
     End Sub
 
     Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles Me.Closing
         If IsConnected Then
-            Try
-                SerialPort.Close()
-                LogMessage("INFO", "Disconnected on window close")
+            Try : SerialPort.Close() : LogMessage("INFO", "Disconnected on window close")
             Catch ex As Exception
                 LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
             End Try
@@ -307,13 +235,12 @@ Class MainWindow
         StopSimulation()
     End Sub
 
-    ' ----------------- Helpers -----------------
-    Private Function MapVPB(X As Double, InMin As Double, InMax As Double, OutMin As Double, OutMax As Double) As Double
-        Dim A As Double = X - InMin
-        Dim B As Double = OutMax - OutMin
-        A *= B
-        B = InMax - InMin
-        A /= B
-        Return A + OutMin
-    End Function
+    Private Sub InitializeChart(ByRef model As PlotModel, ByRef series As LineSeries, title As String, minY As Double, maxY As Double, plotControl As OxyPlot.Wpf.PlotView)
+        model = New PlotModel With {.Title = title}
+        model.Axes.Add(New DateTimeAxis With {.Position = AxisPosition.Bottom, .StringFormat = "HH:mm:ss"})
+        model.Axes.Add(New LinearAxis With {.Position = AxisPosition.Left, .Minimum = minY, .Maximum = maxY})
+        series = New LineSeries With {.Title = title}
+        model.Series.Add(series)
+        plotControl.Model = model
+    End Sub
 End Class
