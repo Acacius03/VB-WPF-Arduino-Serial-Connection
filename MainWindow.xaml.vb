@@ -2,24 +2,24 @@
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
-    ' Backing field
-    Private _isConnected As Boolean = False
-
-    Private Property IsConnected As Boolean
+    Private ReadOnly Property IsConnected As Boolean
         Get
-            Return _isConnected
+            Return SerialPort IsNot Nothing AndAlso SerialPort.IsOpen
         End Get
-        Set(value As Boolean)
-            _isConnected = value
-
-            BtnToggleOnOff.IsEnabled = _isConnected
-
-            If Not _isConnected Then
-                BtnToggleOnOff.IsChecked = False
-                TxtStatus.Text = "Disconnected"
-            End If
-        End Set
     End Property
+    Private Sub UpdateUiForConnection()
+        BtnToggleOnOff.IsEnabled = IsConnected
+
+        Dim Status As String = "Disconnected"
+        If IsConnected Then
+            Status = $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud"
+        Else
+            BtnToggleOnOff.IsChecked = False
+        End If
+
+        TxtStatus.Text = Status
+        LogMessage("SYSTEM", Status)
+    End Sub
 
     Private Sub LogMessage(source As String, message As String)
         Dim timestamp As String = DateTime.Now.ToString("HH:mm:ss")
@@ -30,9 +30,10 @@ Class MainWindow
     End Sub
 
     Private Sub SerialWrite(text As String)
-        If Not IsConnected OrElse SerialPort Is Nothing OrElse Not SerialPort.IsOpen Then Return
+        If Not IsConnected Then Return
         Try
             SerialPort.Write(text)
+            LogMessage("WRITE", text)
         Catch ex As Exception
             LogMessage("WRITE ERROR", ex.Message)
         End Try
@@ -42,51 +43,33 @@ Class MainWindow
         Dim dlg As New SerialPortConnectorWindow()
         Dim result? As Boolean = dlg.ShowDialog()
 
-        If result.HasValue AndAlso result.Value Then
-            ' Update status with chosen port/baud
-            If SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then
-                SerialPort.Close()
-            End If
-
-            Try
-                ' Create new serial connection
-                SerialPort = New SerialPort(dlg.SelectedPort, dlg.SelectedBaud) With {
-                    .NewLine = vbCrLf,
-                    .ReadTimeout = 2000,
-                    .WriteTimeout = 2000
-                }
-                SerialPort.Open()
-                IsConnected = True
-                TxtStatus.Text = $"Connected to {dlg.SelectedPort} at {dlg.SelectedBaud} baud"
-                LogMessage("SYSTEM", $"Connected to {dlg.SelectedPort} at {dlg.SelectedBaud} baud")
-
-            Catch ex As Exception
-                TxtStatus.Text = "Connection Failed"
-                LogMessage("ERROR", $"Could not connect: {ex.Message}")
-                IsConnected = False
-            End Try
-        Else
-            TxtStatus.Text = "Disconnected"
-            IsConnected = False
+        If result.GetValueOrDefault() Then
+            ConnectSerialPort(dlg.SelectedPort, dlg.SelectedBaud)
         End If
+        UpdateUiForConnection()
     End Sub
 
-    ' 🔹 Capture Arduino output
+    Private Sub ConnectSerialPort(portName As String, baudRate As Integer)
+        If IsConnected Then SerialPort.Close()
+        Try
+            SerialPort = New SerialPort(portName, baudRate) With {
+                .NewLine = vbCrLf,
+                .ReadTimeout = 2000,
+                .WriteTimeout = 2000
+            }
+            SerialPort.Open()
+        Catch ex As Exception
+            LogMessage("ERROR", $"Could not connect: {ex.Message}")
+        End Try
+    End Sub
+
     Private Sub SerialPort_DataReceived(sender As Object, e As SerialDataReceivedEventArgs) Handles SerialPort.DataReceived
         Try
             Dim raw As String = SerialPort.ReadLine().Trim()
-            Dim portName As String = SerialPort.PortName
-            Dispatcher.BeginInvoke(
-                Sub()
-                    LogMessage(portName, raw)
-                End Sub
-            )
+            Dim portName As String = If(SerialPort IsNot Nothing, SerialPort.PortName, "UNKNOWN")
+            Dispatcher.BeginInvoke(Sub() LogMessage(portName, raw))
         Catch ex As Exception
-            Dispatcher.BeginInvoke(
-                Sub()
-                    LogMessage("READ ERROR", ex.Message)
-                End Sub
-            )
+            Dispatcher.BeginInvoke(Sub() LogMessage("READ ERROR", ex.Message))
         End Try
     End Sub
 
@@ -95,12 +78,10 @@ Class MainWindow
     End Sub
 
     Private Sub BtnToggleOnOff_Checked(sender As Object, e As RoutedEventArgs)
-        LogMessage("INFO", "Sent ON")
         SerialWrite("ON")
     End Sub
 
     Private Sub BtnToggleOnOff_Unchecked(sender As Object, e As RoutedEventArgs)
-        LogMessage("INFO", "Sent OFF")
         SerialWrite("OFF")
     End Sub
 
@@ -109,14 +90,13 @@ Class MainWindow
     End Sub
 
     Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs)
-        If SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then
-            Try
-                SerialPort.Close()
-                LogMessage("INFO", "Disconnected on window close")
-                IsConnected = False
-            Catch ex As Exception
-                LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
-            End Try
-        End If
+        If Not IsConnected Then Return
+        Try
+            SerialPort.Close()
+            LogMessage("INFO", "Disconnected on window close")
+        Catch ex As Exception
+            LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
+        End Try
+        UpdateUiForConnection()
     End Sub
 End Class
