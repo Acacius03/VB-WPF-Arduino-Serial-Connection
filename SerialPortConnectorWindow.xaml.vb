@@ -8,19 +8,14 @@ Public Class SerialPortConnectorWindow
     Private portRefreshTimer As DispatcherTimer
 
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
-        RefreshPorts()
-
-        portRefreshTimer = New DispatcherTimer()
-        portRefreshTimer.Interval = TimeSpan.FromSeconds(1)
+        portRefreshTimer = New DispatcherTimer With {
+            .Interval = TimeSpan.FromSeconds(1)
+        }
         AddHandler portRefreshTimer.Tick, AddressOf PortRefreshTimer_Tick
         portRefreshTimer.Start()
     End Sub
 
     Private Sub PortRefreshTimer_Tick(sender As Object, e As EventArgs)
-        RefreshPorts()
-    End Sub
-
-    Private Sub RefreshPorts()
         Dim currentPorts = SerialPort.GetPortNames()
         Dim selected As String = Nothing
 
@@ -70,7 +65,7 @@ Public Class SerialPortConnectorWindow
         Me.Close()
     End Sub
 
-    Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles Me.Closing
+    Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs)
         portRefreshTimer?.Stop()
     End Sub
 End Class
