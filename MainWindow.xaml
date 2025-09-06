@@ -14,6 +14,60 @@
 		WindowStartupLocation="CenterScreen"
 		SizeToContent="WidthAndHeight">
 	<Window.Resources>
+		<Style TargetType="Button"
+			   x:Key="CustomConnectButton">
+			<Setter Property="Foreground"
+					Value="White" />
+			<Setter Property="FontSize"
+					Value="14" />
+			<Setter Property="FontWeight"
+					Value="SemiBold" />
+			<Setter Property="Height"
+					Value="36" />
+			<Setter Property="Padding"
+					Value="8" />
+			<Setter Property="BorderThickness"
+					Value="0" />
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="Button">
+						<Border x:Name="border"
+								CornerRadius="4"
+								Background="#007ACC"
+								Padding="{TemplateBinding Padding}">
+							<ContentPresenter HorizontalAlignment="Center"
+											  VerticalAlignment="Center" />
+						</Border>
+						<ControlTemplate.Triggers>
+							<!-- Hover -->
+							<Trigger Property="IsMouseOver"
+									 Value="True">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#006BB3" />
+							</Trigger>
+							<!-- Pressed -->
+							<Trigger Property="IsPressed"
+									 Value="True">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#005A99" />
+							</Trigger>
+							<!-- Disabled -->
+							<Trigger Property="IsEnabled"
+									 Value="False">
+								<Setter TargetName="border"
+										Property="Background"
+										Value="#BDBDBD" />
+								<Setter TargetName="border"
+										Property="Opacity"
+										Value="0.6" />
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
 		<Style TargetType="ToggleButton"
 			   x:Key="CustomToggleButton">
 			<Setter Property="Foreground"
@@ -80,19 +134,20 @@
 			</Setter>
 		</Style>
 	</Window.Resources>
-	<DockPanel>
-		<StatusBar DockPanel.Dock="Bottom"
-				   Background="#eeeeee"
-				   Padding="8">
-			<StatusBarItem>
-				<TextBlock x:Name="TxtStatus"
-						   Text="Disconnected"
-						   FontStyle="Italic"
-						   Foreground="Gray" />
-			</StatusBarItem>
-		</StatusBar>
-		<StackPanel DockPanel.Dock="Bottom"
-					Margin="20,0,20,12">
+	<StackPanel>
+		<StackPanel Margin="20,20,20,8">
+			<Button x:Name="BtnOpenConnector"
+					Style="{StaticResource CustomConnectButton}"
+					Content="Connect to Port"
+					Click="BtnOpenConnector_Click" />
+			<Rectangle Height="4"
+					   Fill="Transparent" />
+			<ToggleButton x:Name="BtnToggleOnOff"
+						  Style="{StaticResource CustomToggleButton}"
+						  Checked="BtnToggleOnOff_Checked"
+						  Unchecked="BtnToggleOnOff_Unchecked" />
+			<Rectangle Height="16"
+					   Fill="Transparent" />
 			<TextBlock Text="Log Output"
 					   FontSize="16"
 					   FontWeight="Bold"
@@ -114,22 +169,12 @@
 						 Background="Transparent" />
 			</Border>
 		</StackPanel>
-		<StackPanel Orientation="Vertical"
-					Margin="20"
-					DockPanel.Dock="Top">
-			<Button x:Name="BtnOpenConnector"
-					Content="Connect to Port"
-					Margin="0,0,0,8"
-					Padding="8"
-					FontSize="14"
-					FontWeight="SemiBold"
-					Background="#007ACC"
-					Foreground="White"
-					Click="BtnOpenConnector_Click" />
-			<ToggleButton x:Name="BtnToggleOnOff"
-						  Style="{StaticResource CustomToggleButton}"
-						  Checked="BtnToggleOnOff_Checked"
-						  Unchecked="BtnToggleOnOff_Unchecked" />
-		</StackPanel>
-	</DockPanel>
+		<Border Background="#eeeeee"
+				Padding="12">
+			<TextBlock x:Name="TxtStatus"
+					   Text="Disconnected"
+					   FontStyle="Italic"
+					   Foreground="Gray" />
+		</Border>
+	</StackPanel>
 </Window>
