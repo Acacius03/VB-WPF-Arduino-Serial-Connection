@@ -5,7 +5,21 @@ Imports OxyPlot.Axes
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
-    Private IsConnected As Boolean = False
+    Private ReadOnly Property IsConnected As Boolean
+        Get
+            Return SerialPort IsNot Nothing AndAlso SerialPort.IsOpen
+        End Get
+    End Property
+    Private Sub UpdateUiForConnection()
+        Dim Status As String = "Disconnected"
+
+        If IsConnected Then
+            Status = $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud"
+        End If
+
+        TxtStatus.Text = Status
+        LogMessage("SYSTEM", Status)
+    End Sub
 
     Public Property HumidityPlotModel As PlotModel
     Public Property TemperaturePlotModel As PlotModel
@@ -26,58 +40,27 @@ Class MainWindow
 
     ' ----------------- Connection -----------------
     Private Sub TryConnect()
-        If IsConnected Then
-            DisconnectSerial()
-            Return
-        End If
-
         Dim dlg As New SerialPortConnectorWindow()
         Dim result? As Boolean = dlg.ShowDialog()
 
-        If result.HasValue AndAlso result.Value Then
-            ConnectSerial(dlg.SelectedPort, dlg.SelectedBaud)
-        Else
-            LogMessage("SYSTEM", "Connection process cancelled")
-            TxtStatus.Text = "Disconnected"
-            IsConnected = False
-            BtnSelectPort.Content = "Connect"
+        If result.GetValueOrDefault() Then
+            ConnectSerialPort(dlg.SelectedPort, dlg.SelectedBaud)
         End If
+
+        UpdateUiForConnection()
     End Sub
 
-    Private Sub ConnectSerial(port As String, baud As Integer)
-        If SerialPort IsNot Nothing AndAlso SerialPort.IsOpen Then SerialPort.Close()
-
+    Private Sub ConnectSerialPort(portName As String, baudRate As Integer)
+        If IsConnected Then SerialPort.Close()
         Try
-            SerialPort = New SerialPort(port, baud) With {
+            SerialPort = New SerialPort(portName, baudRate) With {
                 .NewLine = vbCrLf,
                 .ReadTimeout = 2000,
                 .WriteTimeout = 2000
             }
             SerialPort.Open()
-            IsConnected = True
-
-            Dim statusText = $"Connected to {port} at {baud} baud"
-            TxtStatus.Text = statusText
-            BtnSelectPort.Content = "Disconnect"
-            LogMessage("SYSTEM", statusText)
-
         Catch ex As Exception
-            TxtStatus.Text = "Connection Failed"
             LogMessage("ERROR", $"Could not connect: {ex.Message}")
-            IsConnected = False
-            BtnSelectPort.Content = "Connect"
-        End Try
-    End Sub
-
-    Private Sub DisconnectSerial()
-        Try
-            SerialPort.Close()
-            LogMessage("SYSTEM", "Disconnected")
-            TxtStatus.Text = "Disconnected"
-            BtnSelectPort.Content = "Connect"
-            IsConnected = False
-        Catch ex As Exception
-            LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
         End Try
     End Sub
 
