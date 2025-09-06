@@ -127,11 +127,48 @@
 							Width="20"
 							Height="160"
 							Background="#ddd"
-							CornerRadius="12,12,4,4">
-						<Rectangle x:Name="RectangleTemp"
-								   Width="20"
-								   Height="0"
-								   Fill="#FF5722" />
+							CornerRadius="12,12,12,12">
+						<Grid>
+							<Grid.Clip>
+								<RectangleGeometry Rect="0,0,20,160"
+												   RadiusX="12"
+												   RadiusY="12" />
+							</Grid.Clip>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="128" />
+								<RowDefinition Height="32" />
+							</Grid.RowDefinitions>
+							<Rectangle x:Name="RectangleHotTemp"
+									   Grid.Row="0"
+									   Height="0"
+									   VerticalAlignment="Bottom">
+								<Rectangle.Fill>
+									<LinearGradientBrush StartPoint="0,1"
+														 EndPoint="0,0">
+										<GradientStop Color="Orange"
+													  Offset="0" />
+										<GradientStop Color="red"
+													  Offset="0.5" />
+										<GradientStop Color="DarkRed"
+													  Offset="1" />
+									</LinearGradientBrush>
+								</Rectangle.Fill>
+							</Rectangle>
+							<Rectangle x:Name="RectangleColdTemp"
+									   Grid.Row="1"
+									   Height="0"
+									   VerticalAlignment="Top">
+								<Rectangle.Fill>
+									<LinearGradientBrush StartPoint="0,0"
+														 EndPoint="0,1">
+										<GradientStop Color="Blue"
+													  Offset="0" />
+										<GradientStop Color="LightBlue"
+													  Offset="1" />
+									</LinearGradientBrush>
+								</Rectangle.Fill>
+							</Rectangle>
+						</Grid>
 					</Border>
 					<TextBlock x:Name="TxtTemperature"
 							   Grid.Row="1"

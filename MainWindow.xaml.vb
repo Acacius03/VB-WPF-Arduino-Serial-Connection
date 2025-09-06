@@ -174,15 +174,35 @@ Class MainWindow
     End Sub
 
     ' ----------------- Temperature -----------------
+    ' ----------------- Temperature -----------------
     Private Sub HandleTemperature(tempVal As Double)
         TxtTemperature.Text = $"{tempVal} °C"
 
-        Dim maxHeight As Double = 120
-        Dim vpb_sy = MapVPB(tempVal, -20, 60, 0, maxHeight)
-        If vpb_sy > maxHeight Then vpb_sy = maxHeight
-        If vpb_sy < 0 Then vpb_sy = 0
-        RectangleTemp.Height = vpb_sy
+        ' Max heights from your XAML layout
+        Dim hotMaxHeight As Double = 128  ' upper grid row
+        Dim coldMaxHeight As Double = 32  ' lower grid row
 
+        If tempVal > 0 Then
+            ' Positive: hot bar fills up
+            Dim h = MapVPB(tempVal, 0, 60, 0, hotMaxHeight)
+            If h > hotMaxHeight Then h = hotMaxHeight
+            RectangleHotTemp.Height = h
+            RectangleColdTemp.Height = 0
+
+        ElseIf tempVal < 0 Then
+            ' Negative: cold bar fills down
+            Dim h = MapVPB(tempVal, -20, 0, coldMaxHeight, 0)
+            If h > coldMaxHeight Then h = coldMaxHeight
+            RectangleColdTemp.Height = h
+            RectangleHotTemp.Height = 0
+
+        Else
+            ' Exactly zero
+            RectangleHotTemp.Height = 0
+            RectangleColdTemp.Height = 0
+        End If
+
+        ' Add to temperature chart
         Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
         TemperatureSeries.Points.Add(New DataPoint(nowX, tempVal))
 
@@ -191,6 +211,7 @@ Class MainWindow
         UpdateXAxis(TemperaturePlotModel, nowX)
         TemperaturePlotModel.InvalidatePlot(True)
     End Sub
+
 
     ' ----------------- Axis Helper -----------------
     Private Sub UpdateXAxis(model As PlotModel, nowX As Double)
