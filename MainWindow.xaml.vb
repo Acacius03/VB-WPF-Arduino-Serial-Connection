@@ -7,8 +7,6 @@ Imports System.Windows.Threading
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
-    Private SimTimer As DispatcherTimer
-    Private RandomGen As New Random()
 
     Private Const ChartLimit As Integer = 30
     Private Const ChartWindowSeconds As Integer = 60
@@ -18,29 +16,6 @@ Class MainWindow
 
     Public Property HumidityPlotModel As PlotModel
     Public Property TemperaturePlotModel As PlotModel
-
-    Private Sub StartSimulation()
-        SimTimer = New DispatcherTimer With {.Interval = TimeSpan.FromSeconds(2)}
-        AddHandler SimTimer.Tick, AddressOf SimulateArduinoData
-        SimTimer.Start()
-        LogMessage("SIM", "Simulation started (Arduino emulation)")
-    End Sub
-
-    Private Sub StopSimulation()
-        If SimTimer IsNot Nothing Then
-            SimTimer.Stop()
-            RemoveHandler SimTimer.Tick, AddressOf SimulateArduinoData
-            LogMessage("SIM", "Simulation stopped")
-        End If
-    End Sub
-
-    Private Sub SimulateArduinoData(sender As Object, e As EventArgs)
-        ' Generate fake Arduino data
-        Dim humLine = $"H{RandomGen.Next(20, 91)}"
-        Dim tempLine = $"T{RandomGen.Next(-10, 51)}"
-        ParseAndDisplayData(humLine)
-        ParseAndDisplayData(tempLine)
-    End Sub
 
     Private ReadOnly Property IsConnected As Boolean
         Get
@@ -221,7 +196,6 @@ Class MainWindow
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         InitializeChart(HumidityPlotModel, HumiditySeries, "Humidity (%)", 0, 100, HumidityPlot)
         InitializeChart(TemperaturePlotModel, TemperatureSeries, "Temperature (°C)", -20, 60, TemperaturePlot)
-        StartSimulation()
     End Sub
 
     Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles Me.Closing
@@ -232,7 +206,6 @@ Class MainWindow
             End Try
         End If
         UpdateUiForConnection()
-        StopSimulation()
     End Sub
 
     Private Sub InitializeChart(ByRef model As PlotModel, ByRef series As LineSeries, title As String, minY As Double, maxY As Double, plotControl As OxyPlot.Wpf.PlotView)
