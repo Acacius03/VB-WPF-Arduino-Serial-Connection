@@ -40,7 +40,7 @@ Class MainWindow
             LogMessage("SYSTEM", "Connection process cancelled")
             TxtStatus.Text = "Disconnected"
             IsConnected = False
-            BtnOpenConnector.Content = "Connect"
+            BtnSelectPort.Content = "Connect"
         End If
     End Sub
 
@@ -58,14 +58,14 @@ Class MainWindow
 
             Dim statusText = $"Connected to {port} at {baud} baud"
             TxtStatus.Text = statusText
-            BtnOpenConnector.Content = "Disconnect"
+            BtnSelectPort.Content = "Disconnect"
             LogMessage("SYSTEM", statusText)
 
         Catch ex As Exception
             TxtStatus.Text = "Connection Failed"
             LogMessage("ERROR", $"Could not connect: {ex.Message}")
             IsConnected = False
-            BtnOpenConnector.Content = "Connect"
+            BtnSelectPort.Content = "Connect"
         End Try
     End Sub
 
@@ -74,7 +74,7 @@ Class MainWindow
             SerialPort.Close()
             LogMessage("SYSTEM", "Disconnected")
             TxtStatus.Text = "Disconnected"
-            BtnOpenConnector.Content = "Connect"
+            BtnSelectPort.Content = "Connect"
             IsConnected = False
         Catch ex As Exception
             LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
@@ -223,7 +223,7 @@ Class MainWindow
     End Sub
 
     ' ----------------- UI Events -----------------
-    Private Sub BtnOpenConnector_Click(sender As Object, e As RoutedEventArgs)
+    Private Sub BtnSelectPort_Click(sender As Object, e As RoutedEventArgs)
         TryConnect()
     End Sub
 

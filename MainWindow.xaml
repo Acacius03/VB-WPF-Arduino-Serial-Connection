@@ -9,17 +9,17 @@
 		Title="Arduino Serial Dashboard"
 		MinWidth="720"
 		FontSize="16"
-		Background="#eee"
+		Background="#EEE"
 		ResizeMode="NoResize"
 		WindowStartupLocation="CenterScreen"
+		SizeToContent="WidthAndHeight"
 		Loaded="Window_Loaded"
-		Closing="Window_Closing"
-		SizeToContent="WidthAndHeight">
+		Closing="Window_Closing">
 	<Window.Resources>
 		<Style x:Key="Card"
 			   TargetType="Border">
 			<Setter Property="BorderBrush"
-					Value="#ccc" />
+					Value="#CCC" />
 			<Setter Property="BorderThickness"
 					Value="1" />
 			<Setter Property="Background"
@@ -32,29 +32,31 @@
 					Value="12" />
 		</Style>
 	</Window.Resources>
-	<StackPanel Orientation="Vertical">
-		<Border Background="#ccc"
+	<StackPanel>
+		<!-- Header -->
+		<Border Background="#CCC"
 				Padding="12,8">
 			<Grid>
 				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
 					<ColumnDefinition Width="*" />
 					<ColumnDefinition Width="Auto" />
 				</Grid.ColumnDefinitions>
 				<TextBlock x:Name="TxtStatus"
 						   VerticalAlignment="Center"
-						   HorizontalAlignment="Left"
 						   Text="Disconnected"
 						   FontStyle="Italic" />
-				<Button x:Name="BtnOpenConnector"
-						Grid.Column="1"
-						Content="Connect"
-						Width="120"
-						Height="40"
+				<Button x:Name="BtnSelectPort"
+						Grid.Column="2"
+						Content="Select Port"
+						Padding="20,8"
 						Background="#007ACC"
-						Foreground="White"
-						Click="BtnOpenConnector_Click" />
+						Foreground="White" 
+						Click="BtnSelectPort_Click"
+						/>
 			</Grid>
 		</Border>
+		<!-- Gauges and Charts -->
 		<Grid Margin="4">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="240" />
@@ -68,15 +70,16 @@
 			<Border Style="{StaticResource Card}"
 					Grid.Row="0"
 					Grid.Column="0">
-				<StackPanel VerticalAlignment="Center">
+				<StackPanel HorizontalAlignment="Center"
+							VerticalAlignment="Center">
 					<TextBlock Text="Humidity"
 							   FontWeight="Bold"
-							   TextAlignment="Center"
-							   Padding="0,4" />
+							   Padding="0,4"
+							   TextAlignment="Center" />
 					<Grid x:Name="GaugeHumidity"
 						  Width="160"
 						  Height="160">
-						<Ellipse Stroke="#ddd"
+						<Ellipse Stroke="#DDD"
 								 StrokeThickness="28" />
 						<Path x:Name="ArcHumidity"
 							  Stroke="#007ACC"
@@ -104,81 +107,88 @@
 			<Border Style="{StaticResource Card}"
 					Grid.Row="1"
 					Grid.Column="0">
-				<Grid HorizontalAlignment="Center"
-					  VerticalAlignment="Center">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="auto" />
-						<RowDefinition Height="160" />
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="auto" />
-						<ColumnDefinition Width="*" />
-					</Grid.ColumnDefinitions>
-					<TextBlock Grid.Row="0"
-							   Grid.Column="0"
-							   Grid.ColumnSpan="2"
-							   Text="Temperature"
+				<StackPanel HorizontalAlignment="Center"
+							VerticalAlignment="Center">
+					<TextBlock Text="Temperature"
 							   FontWeight="Bold"
-							   TextAlignment="Center"
-							   Padding="0,4" />
-					<Border Grid.Row="1"
-							Grid.RowSpan="2"
-							Grid.Column="0"
-							Width="20"
-							Height="160"
-							Background="#ddd"
-							CornerRadius="12,12,12,12">
-						<Grid>
-							<Grid.Clip>
-								<RectangleGeometry Rect="0,0,20,160"
-												   RadiusX="12"
-												   RadiusY="12" />
-							</Grid.Clip>
-							<Grid.RowDefinitions>
-								<RowDefinition Height="128" />
-								<RowDefinition Height="32" />
-							</Grid.RowDefinitions>
-							<Rectangle x:Name="RectangleHotTemp"
-									   Grid.Row="0"
-									   Height="0"
-									   VerticalAlignment="Bottom">
-								<Rectangle.Fill>
-									<LinearGradientBrush StartPoint="0,1"
-														 EndPoint="0,0">
-										<GradientStop Color="Orange"
-													  Offset="0" />
-										<GradientStop Color="red"
-													  Offset="0.5" />
-										<GradientStop Color="DarkRed"
-													  Offset="1" />
-									</LinearGradientBrush>
-								</Rectangle.Fill>
-							</Rectangle>
-							<Rectangle x:Name="RectangleColdTemp"
-									   Grid.Row="1"
-									   Height="0"
-									   VerticalAlignment="Top">
-								<Rectangle.Fill>
-									<LinearGradientBrush StartPoint="0,0"
-														 EndPoint="0,1">
-										<GradientStop Color="Blue"
-													  Offset="0" />
-										<GradientStop Color="LightBlue"
-													  Offset="1" />
-									</LinearGradientBrush>
-								</Rectangle.Fill>
-							</Rectangle>
+							   Padding="0,4"
+							   TextAlignment="Center" />
+					<StackPanel Orientation="Horizontal">
+						<!-- Scale -->
+						<Grid Margin="0,0,8,0">
+							<TextBlock Text="+128 °C"
+									   HorizontalAlignment="Right"
+									   VerticalAlignment="Top"
+									   FontSize="12"
+									   FontWeight="Black"
+									   Foreground="Red" />
+							<TextBlock Text="0 °C"
+									   HorizontalAlignment="Right"
+									   VerticalAlignment="Bottom"
+									   Margin="0,0,0,25"
+									   FontSize="12"
+									   FontWeight="Black" />
+							<TextBlock Text="-32 °C"
+									   HorizontalAlignment="Right"
+									   VerticalAlignment="Bottom"
+									   FontSize="12"
+									   FontWeight="Black"
+									   Foreground="Blue" />
 						</Grid>
-					</Border>
-					<TextBlock x:Name="TxtTemperature"
-							   Grid.Row="1"
-							   Grid.Column="1"
-							   Text="0 °C"
-							   FontSize="28"
-							   FontWeight="Bold"
-							   HorizontalAlignment="Center"
-							   VerticalAlignment="Center" />
-				</Grid>
+						<!-- Thermometer -->
+						<Border Width="20"
+								Height="160"
+								Background="#DDD"
+								CornerRadius="12">
+							<Grid>
+								<Grid.Clip>
+									<RectangleGeometry Rect="0,0,20,160"
+													   RadiusX="12"
+													   RadiusY="12" />
+								</Grid.Clip>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="128" />
+									<RowDefinition Height="32" />
+								</Grid.RowDefinitions>
+								<Rectangle x:Name="RectangleHotTemp"
+										   Grid.Row="0"
+										   VerticalAlignment="Bottom">
+									<Rectangle.Fill>
+										<LinearGradientBrush StartPoint="0,1"
+															 EndPoint="0,0">
+											<GradientStop Color="Orange"
+														  Offset="0" />
+											<GradientStop Color="Red"
+														  Offset="0.5" />
+											<GradientStop Color="DarkRed"
+														  Offset="1" />
+										</LinearGradientBrush>
+									</Rectangle.Fill>
+								</Rectangle>
+								<Rectangle x:Name="RectangleColdTemp"
+										   Grid.Row="1"
+										   VerticalAlignment="Top">
+									<Rectangle.Fill>
+										<LinearGradientBrush StartPoint="0,0"
+															 EndPoint="0,1">
+											<GradientStop Color="Blue"
+														  Offset="0" />
+											<GradientStop Color="LightBlue"
+														  Offset="1" />
+										</LinearGradientBrush>
+									</Rectangle.Fill>
+								</Rectangle>
+							</Grid>
+						</Border>
+						<!-- Reading -->
+						<TextBlock x:Name="TxtTemperature"
+								   Margin="12,0,0,0"
+								   VerticalAlignment="Center"
+								   Text="0 °C"
+								   FontSize="28"
+								   FontWeight="Bold" />
+					</StackPanel>
+				</StackPanel>
 			</Border>
 			<!-- Temperature chart -->
 			<Border Style="{StaticResource Card}"
@@ -193,10 +203,14 @@
 				   FontWeight="Bold"
 				   Margin="12,0" />
 		<Border Style="{StaticResource Card}"
+				CornerRadius="4"
 				Margin="8,4,8,8"
-				Height="120">
+				Height="120"
+				Padding="8">
 			<TextBox x:Name="TxtData"
 					 FontSize="12"
+					 FontWeight="SemiBold"
+					 Foreground="#333"
 					 IsReadOnly="True"
 					 BorderThickness="0"
 					 VerticalScrollBarVisibility="Auto"

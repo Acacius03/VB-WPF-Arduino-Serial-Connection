@@ -1,22 +1,27 @@
 ﻿Imports System.IO.Ports
+Imports System.Windows.Threading
 
 Public Class SerialPortConnectorWindow
     Public Property SelectedPort As String
     Public Property SelectedBaud As Integer
 
+    Private portRefreshTimer As DispatcherTimer
 
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
-        RefreshPorts()
+        portRefreshTimer = New DispatcherTimer With {
+            .Interval = TimeSpan.FromSeconds(1)
+        }
+        AddHandler portRefreshTimer.Tick, AddressOf PortRefreshTimer_Tick
+        portRefreshTimer.Start()
     End Sub
 
-    Private Sub RefreshPorts()
+    Private Sub PortRefreshTimer_Tick(sender As Object, e As EventArgs)
         Dim currentPorts = SerialPort.GetPortNames()
         Dim selected As String = Nothing
 
-        'Auto Select First Available Port
-        'If CboPorts.SelectedItem IsNot Nothing Then
-        '    selected = CboPorts.SelectedItem.ToString()
-        'End If
+        If CboPorts.SelectedItem IsNot Nothing Then
+            selected = CboPorts.SelectedItem.ToString()
+        End If
 
         If Not currentPorts.SequenceEqual(CboPorts.Items.Cast(Of String)()) Then
             CboPorts.ItemsSource = currentPorts
@@ -58,5 +63,9 @@ Public Class SerialPortConnectorWindow
     Private Sub BtnCancel_Click(sender As Object, e As RoutedEventArgs)
         Me.DialogResult = False
         Me.Close()
+    End Sub
+
+    Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs)
+        portRefreshTimer?.Stop()
     End Sub
 End Class
