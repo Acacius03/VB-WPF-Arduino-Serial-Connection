@@ -19,6 +19,13 @@ Class MainWindow
         LogMessage("SYSTEM", status)
     End Sub
 
+    Private Sub AnimateBar(rect As Rectangle, targetHeight As Double)
+        Dim anim As New Animation.DoubleAnimation(targetHeight, TimeSpan.FromMilliseconds(400)) With {
+        .EasingFunction = New Animation.CubicEase() With {.EasingMode = Animation.EasingMode.EaseOut}
+    }
+        rect.BeginAnimation(Rectangle.HeightProperty, anim)
+    End Sub
+
     Public Property HumidityPlotModel As PlotModel
     Public Property TemperaturePlotModel As PlotModel
 
@@ -118,12 +125,15 @@ Class MainWindow
 
     Private Sub UpdateHumidityArc(value As Double)
         value = Math.Max(0, Math.Min(100, value))
+
+        ' Update text
+        TxtHumidityPercent.Text = $"{Math.Round(value)}%"
+
         If value <= 0 Then
-            ArcHumidity.Data = Nothing
-            TxtHumidityPercent.Text = "0%"
             Return
         End If
 
+        ' Calculate geometry parameters
         Dim angle As Double = value * 360.0 / 100.0
         Dim radians As Double = (Math.PI / 180.0) * angle
 
@@ -142,25 +152,22 @@ Class MainWindow
         Dim radius As Double = Math.Min(width, height) / 2.0 - strokeThickness / 2.0
         If radius < 0 Then radius = 0
 
-        Dim startPoint As New Point(centerX, centerY - radius)
-        Dim endPoint As New Point(centerX + radius * Math.Sin(radians), centerY - radius * Math.Cos(radians))
-        Dim isLargeArc As Boolean = angle > 180.0
+        ' Target endpoint
+        Dim newEndPoint As New Point(centerX + radius * Math.Sin(radians),
+                                 centerY - radius * Math.Cos(radians))
 
-        Dim figure As New PathFigure() With {.StartPoint = startPoint}
-        Dim segment As New ArcSegment() With {
-            .Point = endPoint,
-            .Size = New Size(radius, radius),
-            .IsLargeArc = isLargeArc,
-            .SweepDirection = SweepDirection.Clockwise
-        }
-        figure.Segments.Clear()
-        figure.Segments.Add(segment)
+        ' Animate endpoint smoothly
+        Dim animX As New Animation.DoubleAnimation(newEndPoint.X, TimeSpan.FromMilliseconds(400)) With {
+        .EasingFunction = New Animation.CubicEase() With {.EasingMode = Animation.EasingMode.EaseOut}
+    }
+        Dim animY As New Animation.DoubleAnimation(newEndPoint.Y, TimeSpan.FromMilliseconds(400)) With {
+        .EasingFunction = New Animation.CubicEase() With {.EasingMode = Animation.EasingMode.EaseOut}
+    }
 
-        Dim geo As New PathGeometry()
-        geo.Figures.Add(figure)
-        ArcHumidity.Data = geo
-
-        TxtHumidityPercent.Text = $"{Math.Round(value)}%"
+        ' Apply to segment's point
+        HumidityArcSegment.BeginAnimation(ArcSegment.PointProperty, Nothing) ' stop old animation
+        HumidityArcSegment.BeginAnimation(ArcSegment.PointProperty, Nothing) ' ensure fresh start
+        HumidityArcSegment.Point = newEndPoint
     End Sub
 
     ' ----------------- Temperature -----------------
@@ -175,35 +182,33 @@ Class MainWindow
             ' Positive: hot bar fills up
             Dim h = MapVPB(tempVal, 0, 60, 0, hotMaxHeight)
             If h > hotMaxHeight Then h = hotMaxHeight
-            RectangleHotTemp.Height = h
-            RectangleColdTemp.Height = 0
+
+            AnimateBar(RectangleHotTemp, h)
+            AnimateBar(RectangleColdTemp, 0)
 
         ElseIf tempVal < 0 Then
             ' Negative: cold bar fills down
             Dim h = MapVPB(tempVal, -20, 0, coldMaxHeight, 0)
             If h > coldMaxHeight Then h = coldMaxHeight
-            RectangleColdTemp.Height = h
-            RectangleHotTemp.Height = 0
+
+            AnimateBar(RectangleColdTemp, h)
+            AnimateBar(RectangleHotTemp, 0)
 
         Else
             ' Exactly zero
-            RectangleHotTemp.Height = 0
-            RectangleColdTemp.Height = 0
+            AnimateBar(RectangleHotTemp, 0)
+            AnimateBar(RectangleColdTemp, 0)
         End If
 
         ' Add to temperature chart
         Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
         TemperatureSeries.Points.Add(New DataPoint(nowX, tempVal))
 
-
-        While TemperatureSeries.Points.Count > ChartLimit
-            TemperatureSeries.Points.RemoveAt(0)
-        End While
+        If TemperatureSeries.Points.Count > ChartLimit Then TemperatureSeries.Points.RemoveAt(0)
 
         UpdateXAxis(TemperaturePlotModel, nowX)
         TemperaturePlotModel.InvalidatePlot(True)
     End Sub
-
 
     ' ----------------- Axis Helper -----------------
     Private Sub UpdateXAxis(model As PlotModel, nowX As Double)
@@ -226,9 +231,22 @@ Class MainWindow
         HumidityPlotModel = New PlotModel With {.Title = "Humidity (%)"}
         HumidityPlotModel.Axes.Add(New DateTimeAxis With {.Position = AxisPosition.Bottom, .StringFormat = "HH:mm:ss"})
         HumidityPlotModel.Axes.Add(New LinearAxis With {.Position = AxisPosition.Left, .Minimum = 0, .Maximum = 100})
-        HumiditySeries = New LineSeries With {.Title = "Humidity"}
+        HumiditySeries = New LineSeries With {.Title = "humidity"}
         HumidityPlotModel.Series.Add(HumiditySeries)
         HumidityPlot.Model = HumidityPlotModel
+
+        Dim figure As New PathFigure()
+        HumidityArcSegment = New ArcSegment() With {
+        .Size = New Size(50, 50),
+        .Point = New Point(0, 0),
+        .SweepDirection = SweepDirection.Clockwise
+    }
+        figure.Segments.Add(HumidityArcSegment)
+        figure.StartPoint = New Point(80, 10) ' start top center (adjust depending on your control size)
+
+        Dim geo As New PathGeometry()
+        geo.Figures.Add(figure)
+        ArcHumidity.Data = geo
 
         ' Temperature chart
         TemperaturePlotModel = New PlotModel With {.Title = "Temperature (°C)"}
