@@ -2,19 +2,58 @@
 Imports OxyPlot
 Imports OxyPlot.Series
 Imports OxyPlot.Axes
+Imports System.Windows.Media.Animation
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
+
+    Private SimTimer As Windows.Threading.DispatcherTimer
+    Private RandomGen As New Random()
+
+    Private currentHumidity As Double = 0
+
+    Private Sub StartSimulation()
+        SimTimer = New Windows.Threading.DispatcherTimer() With {
+            .Interval = TimeSpan.FromSeconds(2)
+        }
+        AddHandler SimTimer.Tick, AddressOf SimulateArduinoData
+        SimTimer.Start()
+        LogMessage("SIM", "Simulation started (Arduino emulation)")
+    End Sub
+
+    Private Sub StopSimulation()
+        If SimTimer IsNot Nothing Then
+            SimTimer.Stop()
+            RemoveHandler SimTimer.Tick, AddressOf SimulateArduinoData
+            LogMessage("SIM", "Simulation stopped")
+        End If
+    End Sub
+
+    Private Sub SimulateArduinoData(sender As Object, e As EventArgs)
+        ' Generate fake humidity between 20–90
+        Dim hum As Double = RandomGen.Next(20, 91)
+        ' Generate fake temperature between -10–50
+        Dim temp As Double = RandomGen.Next(-10, 51)
+
+        ' Fake Arduino format: Hxx and Txx
+        Dim humLine As String = $"H{hum}"
+        Dim tempLine As String = $"T{temp}"
+
+        ' Pass into your normal parser (as if SerialPort sent it)
+        ParseAndDisplayData(humLine)
+        ParseAndDisplayData(tempLine)
+    End Sub
+
     Private ReadOnly Property IsConnected As Boolean
         Get
             Return SerialPort IsNot Nothing AndAlso SerialPort.IsOpen
         End Get
     End Property
+
     Private Sub UpdateUiForConnection()
         Dim status As String = If(IsConnected,
                                   $"Connected to {SerialPort?.PortName} at {SerialPort?.BaudRate} baud",
                                   "Disconnected")
-
         TxtStatus.Text = status
         LogMessage("SYSTEM", status)
     End Sub
@@ -116,47 +155,64 @@ Class MainWindow
         HumidityPlotModel.InvalidatePlot(True)
     End Sub
 
+    Public Shared ReadOnly AnimatedHumidityProperty As DependencyProperty =
+    DependencyProperty.Register("AnimatedHumidity", GetType(Double), GetType(MainWindow),
+                                New PropertyMetadata(0.0, AddressOf OnAnimatedHumidityChanged))
+
+    Public Property AnimatedHumidity As Double
+        Get
+            Return CDbl(GetValue(AnimatedHumidityProperty))
+        End Get
+        Set(value As Double)
+            SetValue(AnimatedHumidityProperty, value)
+        End Set
+    End Property
+
+    Private Shared Sub OnAnimatedHumidityChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
+        Dim wnd As MainWindow = CType(d, MainWindow)
+        wnd.DrawHumidityArc(CDbl(e.NewValue))
+    End Sub
+
+
     Private Sub UpdateHumidityArc(value As Double)
         value = Math.Max(0, Math.Min(100, value))
-        If value <= 0 Then
-            ArcHumidity.Data = Nothing
-            TxtHumidityPercent.Text = "0%"
-            Return
-        End If
 
+        Dim startValue As Double = AnimatedHumidity
+        Dim anim As New DoubleAnimation(startValue, value, TimeSpan.FromMilliseconds(500)) With {
+        .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
+    }
+
+        ' Animate our DP instead of using PathGeometry directly
+        Me.BeginAnimation(AnimatedHumidityProperty, anim)
+    End Sub
+
+
+
+    Private Sub DrawHumidityArc(value As Double)
         Dim angle As Double = value * 360.0 / 100.0
-        Dim radians As Double = (Math.PI / 180.0) * angle
+        Dim radians As Double = Math.PI * angle / 180.0
 
-        Dim container = GaugeHumidity
-        Dim width As Double = If(container.ActualWidth > 0, container.ActualWidth, container.Width)
-        Dim height As Double = If(container.ActualHeight > 0, container.ActualHeight, container.Height)
-        If Double.IsNaN(width) OrElse Double.IsNaN(height) OrElse width = 0 OrElse height = 0 Then
-            width = 160 : height = 160
-        End If
+        Dim width As Double = If(GaugeHumidity.ActualWidth > 0, GaugeHumidity.ActualWidth, GaugeHumidity.Width)
+        Dim height As Double = If(GaugeHumidity.ActualHeight > 0, GaugeHumidity.ActualHeight, GaugeHumidity.Height)
+        Dim strokeThickness As Double = If(ArcHumidity.StrokeThickness > 0, ArcHumidity.StrokeThickness, 28)
 
-        Dim strokeThickness As Double = ArcHumidity.StrokeThickness
-        If strokeThickness <= 0 Then strokeThickness = 28
+        Dim centerX = width / 2.0
+        Dim centerY = height / 2.0
+        Dim radius = Math.Min(width, height) / 2.0 - strokeThickness / 2.0
 
-        Dim centerX As Double = width / 2.0
-        Dim centerY As Double = height / 2.0
-        Dim radius As Double = Math.Min(width, height) / 2.0 - strokeThickness / 2.0
-        If radius < 0 Then radius = 0
+        Dim startPoint = New Point(centerX, centerY - radius)
+        Dim endPoint = New Point(centerX + radius * Math.Sin(radians), centerY - radius * Math.Cos(radians))
+        Dim isLargeArc = angle > 180.0
 
-        Dim startPoint As New Point(centerX, centerY - radius)
-        Dim endPoint As New Point(centerX + radius * Math.Sin(radians), centerY - radius * Math.Cos(radians))
-        Dim isLargeArc As Boolean = angle > 180.0
+        Dim figure = New PathFigure() With {.StartPoint = startPoint}
+        figure.Segments.Add(New ArcSegment() With {
+                                .Point = endPoint,
+                                .Size = New Size(radius, radius),
+                                .IsLargeArc = isLargeArc,
+                                .SweepDirection = SweepDirection.Clockwise
+                            })
 
-        Dim figure As New PathFigure() With {.StartPoint = startPoint}
-        Dim segment As New ArcSegment() With {
-            .Point = endPoint,
-            .Size = New Size(radius, radius),
-            .IsLargeArc = isLargeArc,
-            .SweepDirection = SweepDirection.Clockwise
-        }
-        figure.Segments.Clear()
-        figure.Segments.Add(segment)
-
-        Dim geo As New PathGeometry()
+        Dim geo = New PathGeometry()
         geo.Figures.Add(figure)
         ArcHumidity.Data = geo
 
@@ -167,43 +223,42 @@ Class MainWindow
     Private Sub HandleTemperature(tempVal As Double)
         TxtTemperature.Text = $"{tempVal} °C"
 
-        ' Max heights from your XAML layout
-        Dim hotMaxHeight As Double = 128  ' upper grid row
-        Dim coldMaxHeight As Double = 32  ' lower grid row
+        Dim hotMaxHeight As Double = 128
+        Dim coldMaxHeight As Double = 32
+
+        Dim hotHeight As Double = 0
+        Dim coldHeight As Double = 0
 
         If tempVal > 0 Then
-            ' Positive: hot bar fills up
-            Dim h = MapVPB(tempVal, 0, 60, 0, hotMaxHeight)
-            If h > hotMaxHeight Then h = hotMaxHeight
-            RectangleHotTemp.Height = h
-            RectangleColdTemp.Height = 0
-
+            hotHeight = MapVPB(tempVal, 0, 60, 0, hotMaxHeight)
         ElseIf tempVal < 0 Then
-            ' Negative: cold bar fills down
-            Dim h = MapVPB(tempVal, -20, 0, coldMaxHeight, 0)
-            If h > coldMaxHeight Then h = coldMaxHeight
-            RectangleColdTemp.Height = h
-            RectangleHotTemp.Height = 0
-
-        Else
-            ' Exactly zero
-            RectangleHotTemp.Height = 0
-            RectangleColdTemp.Height = 0
+            coldHeight = MapVPB(tempVal, -20, 0, coldMaxHeight, 0)
         End If
+
+        Dim startHot As Double = If(Double.IsNaN(RectangleHotTemp.Height), 0, RectangleHotTemp.Height)
+        Dim startCold As Double = If(Double.IsNaN(RectangleColdTemp.Height), 0, RectangleColdTemp.Height)
+
+        ' Animate hot bar
+        Dim animHot As New DoubleAnimation(startHot, hotHeight, TimeSpan.FromMilliseconds(500)) With {
+    .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
+}
+        RectangleHotTemp.BeginAnimation(HeightProperty, animHot)
+
+        ' Animate cold bar
+        Dim animCold As New DoubleAnimation(startCold, coldHeight, TimeSpan.FromMilliseconds(500)) With {
+    .EasingFunction = New QuadraticEase() With {.EasingMode = EasingMode.EaseOut}
+}
+        RectangleColdTemp.BeginAnimation(HeightProperty, animCold)
 
         ' Add to temperature chart
         Dim nowX As Double = DateTimeAxis.ToDouble(DateTime.Now)
         TemperatureSeries.Points.Add(New DataPoint(nowX, tempVal))
-
-
         While TemperatureSeries.Points.Count > ChartLimit
             TemperatureSeries.Points.RemoveAt(0)
         End While
-
         UpdateXAxis(TemperaturePlotModel, nowX)
         TemperaturePlotModel.InvalidatePlot(True)
     End Sub
-
 
     ' ----------------- Axis Helper -----------------
     Private Sub UpdateXAxis(model As PlotModel, nowX As Double)
@@ -218,8 +273,6 @@ Class MainWindow
     Private Sub BtnSelectPort_Click(sender As Object, e As RoutedEventArgs)
         TryConnect()
     End Sub
-
-    Private HumidityArcSegment As ArcSegment
 
     Private Sub Window_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         ' Humidity chart
@@ -237,17 +290,21 @@ Class MainWindow
         TemperatureSeries = New LineSeries With {.Title = "Temperature"}
         TemperaturePlotModel.Series.Add(TemperatureSeries)
         TemperaturePlot.Model = TemperaturePlotModel
+
+        StartSimulation()
     End Sub
 
     Private Sub Window_Closing(sender As Object, e As ComponentModel.CancelEventArgs) Handles Me.Closing
-        If Not IsConnected Then Return
-        Try
-            SerialPort.Close()
-            LogMessage("INFO", "Disconnected on window close")
-        Catch ex As Exception
-            LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
-        End Try
+        If IsConnected Then
+            Try
+                SerialPort.Close()
+                LogMessage("INFO", "Disconnected on window close")
+            Catch ex As Exception
+                LogMessage("ERROR", $"Error during disconnect: {ex.Message}")
+            End Try
+        End If
         UpdateUiForConnection()
+        StopSimulation()
     End Sub
 
     ' ----------------- Helpers -----------------

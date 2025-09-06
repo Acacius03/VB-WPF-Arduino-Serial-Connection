@@ -51,9 +51,8 @@
 						Content="Select Port"
 						Padding="20,8"
 						Background="#007ACC"
-						Foreground="White" 
-						Click="BtnSelectPort_Click"
-						/>
+						Foreground="White"
+						Click="BtnSelectPort_Click" />
 			</Grid>
 		</Border>
 		<!-- Gauges and Charts -->
@@ -106,16 +105,22 @@
 			<!-- Temperature gauge -->
 			<Border Style="{StaticResource Card}"
 					Grid.Row="1"
-					Grid.Column="0">
-				<StackPanel HorizontalAlignment="Center"
-							VerticalAlignment="Center">
+					Grid.Column="0"
+					Padding="24,16">
+				<StackPanel>
 					<TextBlock Text="Temperature"
 							   FontWeight="Bold"
 							   Padding="0,4"
 							   TextAlignment="Center" />
-					<StackPanel Orientation="Horizontal">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto" />
+							<ColumnDefinition Width="Auto" />
+							<ColumnDefinition Width="*" />
+						</Grid.ColumnDefinitions>
 						<!-- Scale -->
-						<Grid Margin="0,0,8,0">
+						<Grid Grid.Column="0"
+							  Margin="0,0,8,0">
 							<TextBlock Text="+128 °C"
 									   HorizontalAlignment="Right"
 									   VerticalAlignment="Top"
@@ -136,7 +141,8 @@
 									   Foreground="Blue" />
 						</Grid>
 						<!-- Thermometer -->
-						<Border Width="20"
+						<Border Grid.Column="1"
+								Width="20"
 								Height="160"
 								Background="#DDD"
 								CornerRadius="12">
@@ -181,13 +187,14 @@
 							</Grid>
 						</Border>
 						<!-- Reading -->
-						<TextBlock x:Name="TxtTemperature"
+						<TextBlock Grid.Column="2"
+								   x:Name="TxtTemperature"
 								   Margin="12,0,0,0"
 								   VerticalAlignment="Center"
-								   Text="0 °C"
+								   Text="-128 °C"
 								   FontSize="28"
 								   FontWeight="Bold" />
-					</StackPanel>
+					</Grid>
 				</StackPanel>
 			</Border>
 			<!-- Temperature chart -->
