@@ -1,9 +1,9 @@
 ﻿Imports System.IO.Ports
-Imports OxyPlot
-Imports OxyPlot.Series
-Imports OxyPlot.Axes
 Imports System.Windows.Media.Animation
 Imports System.Windows.Threading
+Imports OxyPlot
+Imports OxyPlot.Axes
+Imports OxyPlot.Series
 
 Class MainWindow
     Private WithEvents SerialPort As SerialPort
